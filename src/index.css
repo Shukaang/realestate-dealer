@@ -1,0 +1,7 @@
+@import "tailwindcss";
+.my-font{
+    font-weight: 500;
+    font-family: Arial, sans-serif;
+    line-height: 1.6em;
+    word-spacing: 0.05rem;
+}
