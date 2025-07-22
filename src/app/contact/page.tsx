@@ -10,8 +10,25 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Footer from "@/components/user/Footer";
 import ContactForm from "@/components/UserMessage";
+import { useState, useEffect } from "react";
+import PageLoader from "@/components/shared/PageLoader";
 
 export default function ContactPage() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading (remove this in production)
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <PageLoader />
+      </div>
+    );
+  }
   return (
     <div className="text-gray-800 pt-10">
       {/* Hero */}
@@ -27,19 +44,21 @@ export default function ContactPage() {
       <div className="max-w-7xl mx-auto px-4 py-10 space-y-12">
         <div className="lg:flex gap-8">
           {/* Left: Send Message */}
-          <div className="lg:w-1/2 bg-white p-6 shadow-md rounded-md space-y-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+          <div className="lg:w-1/2 bg-white sm:p-6 p-2 shadow-md rounded-md space-y-6">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+              <span className="w-2 h-8 bg-blue-700 mr-3 rounded-full"></span>
               Send Us a Message
             </h2>
             <ContactForm />
           </div>
 
           {/* Right: Contact Info */}
-          <div className="lg:w-1/2 mt-10 lg:mt-0 space-y-5">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-5">
+          <div className="lg:w-1/2 mt-10 lg:mt-6 space-y-8">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+              <span className="w-2 h-8 bg-blue-700 mr-3 rounded-full"></span>
               Contact Information
             </h2>
-            <div className="bg-gray-50 p-6 shadow-md rounded-md space-y-5 text-gray-700">
+            <div className="p-3 sm:p-6 shadow-md rounded-md space-y-5 text-gray-700">
               <div className="flex items-start mb-5 gap-3">
                 <div className="w-11 h-11 flex items-center justify-center text-blue-700 bg-blue-100 rounded-full">
                   <FontAwesomeIcon icon={faMapMarkerAlt} className="text-lg" />

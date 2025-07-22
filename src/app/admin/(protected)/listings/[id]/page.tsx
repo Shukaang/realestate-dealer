@@ -22,10 +22,11 @@ import {
   faBed,
   faBath,
   faHouse,
+  faLocation,
+  faMapMarker,
+  faMapMarkerAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import PageLoader from "@/components/shared/PageLoader";
-import { Loader2 } from "lucide-react";
-import { faTypo3 } from "@fortawesome/free-brands-svg-icons";
 
 interface Listing {
   id: string;
@@ -37,19 +38,23 @@ interface Listing {
   description?: string;
   overview: string;
   images?: string[];
-  createdBy: string;
+  createdBy: {
+    uid: string;
+    name: string;
+    email: string;
+  };
   createdAt: any;
   status: string;
   bedrooms: string;
   bathrooms: string;
   type: string;
+  for: string;
 }
 
 export default function ListingDetailPage() {
   const { id } = useParams();
   const [listing, setListing] = useState<Listing | null>(null);
   const [createdByName, setCreatedByName] = useState<string | null>(null);
-  const [adminName, setAdminName] = useState("Admin");
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -69,55 +74,23 @@ export default function ListingDetailPage() {
       setListing(listingData);
 
       // Fetch admin who created the listing
-      if (listingData.createdBy) {
-        const adminRef = doc(db, "admins", listingData.createdBy);
-        const adminSnap = await getDoc(adminRef);
-        if (adminSnap.exists()) {
-          const adminData = adminSnap.data();
-          setAdminName(`${adminData.firstName} ${adminData.lastName}`);
-        }
-      }
     };
 
     fetchListing();
   }, [id]);
-  useEffect(() => {
-    const fetchAdminName = async () => {
-      if (!listing?.createdBy) return;
-
-      const q = query(
-        collection(db, "admins"),
-        where("email", "==", listing.createdBy)
-      );
-      const snap = await getDocs(q);
-
-      if (!snap.empty) {
-        const admin = snap.docs[0].data();
-        setCreatedByName(`${admin.firstName} ${admin.lastName}`);
-      } else {
-        setCreatedByName(listing.createdBy);
-      }
-    };
-
-    fetchAdminName();
-  }, [listing?.createdBy]);
 
   if (!listing) {
     return <PageLoader />;
   }
 
   return (
-    <div className="mx-auto p-2 space-y-4">
+    <div className="max-w-7xl mx-auto px-4 py-18 space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-2 text-sm text-gray-600">
         <div className="flex items-center gap-2">
           <FontAwesomeIcon icon={faUser} className="text-blue-600 w-4" />
-          <p className="text-sm flex items-center">
-            Created by: {""}{" "}
-            <span className="font-medium text-blue-700">
-              {createdByName || (
-                <Loader2 className="h-5 w-5 animate-spin text-blue-700" />
-              )}
-            </span>
+          <p className="text-sm font-semibold flex items-center">
+            {"By: "}
+            {listing.createdBy?.name || "Unknown creator"}{" "}
           </p>
         </div>
 
@@ -135,14 +108,22 @@ export default function ListingDetailPage() {
           <FontAwesomeIcon
             icon={listing.status === "sold" ? faCircleXmark : faCircleCheck}
             className={`w-4 ${
-              listing.status === "sold" ? "text-red-500" : "text-green-600"
+              listing.status === "sold"
+                ? "text-red-500"
+                : listing.status === "available"
+                ? "text-green-600"
+                : "text-yellow-500"
             }`}
           />
           <span>
             Status:{" "}
             <strong
               className={
-                listing.status === "sold" ? "text-red-600" : "text-green-600"
+                listing.status === "sold"
+                  ? "text-red-600"
+                  : listing.status === "available"
+                  ? "text-green-600"
+                  : "text-yellow-500"
               }
             >
               {listing.status?.toUpperCase()}
@@ -151,48 +132,61 @@ export default function ListingDetailPage() {
         </div>
       </div>
 
-      <div className="flex gap-4 h-[500px]">
-        {/* Main Image */}
-        <div className="w-1/2 rounded-lg overflow-hidden relative">
-          <Image
-            src={listing.images?.[0] || "/no-image.jpg"}
-            alt={listing.title}
-            width={1000}
-            height={500}
-            className="w-full h-full object-cover rounded-lg transition-transform duration-500 hover:scale-105"
-          />
+      {/* Property Gallery */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[500px]">
+        <div className="relative rounded-xl overflow-hidden h-full">
+          {listing.images?.[0] && (
+            <Image
+              src={listing.images[0]}
+              alt={`Main view of ${listing.title}`}
+              fill
+              className="object-cover lg:object-cover sm:object-cover"
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+            />
+          )}
         </div>
-
-        {/* Right Side Gallery Images */}
-        {listing.images?.length > 1 && (
-          <div className="w-1/2 grid grid-cols-2 grid-rows-2 gap-4 overflow-hidden rounded-lg">
-            {listing.images.slice(1, 5).map((img, i) => (
-              <div key={i} className="rounded-lg overflow-hidden h-full">
-                <Image
-                  src={img}
-                  alt={`Gallery image ${i + 2}`}
-                  width={500}
-                  height={250}
-                  className="w-full h-full object-cover rounded-lg transition-transform duration-500 hover:scale-105"
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-2 grid-rows-2 gap-4 h-full">
+          {listing.images?.slice(1, 5).map((img, i) => (
+            <div key={i} className="relative rounded-xl overflow-hidden">
+              <Image
+                src={img}
+                alt={`Gallery image ${i + 1} of ${listing.title}`}
+                fill
+                className="object-cover lg:object-cover sm:object-cover"
+                sizes="(max-width: 1024px) 50vw, 25vw"
+              />
+            </div>
+          ))}
+        </div>
       </div>
       {/* Listing Header Details */}
       <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center mt-6 mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">{listing.title}</h1>
-          <p className="text-gray-500 text-sm mt-1">{listing.location}</p>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-gray-100">
+            {listing.title}
+          </h1>
+
+          <p className="text-gray-500 mt-1">
+            <span className="text-blue-600 mr-2">
+              <FontAwesomeIcon icon={faMapMarkerAlt} />
+            </span>
+            {listing.location}
+          </p>
         </div>
         <div className="mt-4 md:mt-0">
           <p className="text-2xl font-bold text-blue-700">
             ETB {Number(listing.price).toLocaleString("en-US")}
           </p>
-          <p className="text-sm text-gray-500">
-            Est. {Number(listing.price / 12).toLocaleString("en-US")} / month
-          </p>
+          {listing.for === "Rent" ? (
+            <p className="text-sm text-gray-500">
+              {Number(listing.price).toLocaleString("en-US")}/month
+            </p>
+          ) : (
+            <p className="text-sm text-gray-500">
+              Est. {Number(listing.price / 12).toLocaleString("en-US")} / month
+            </p>
+          )}
         </div>
       </div>
 

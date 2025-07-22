@@ -1,21 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  doc as docRef,
-  getDoc,
-  updateDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-} from "firebase/firestore";
 import { format } from "date-fns";
-import { db } from "@/lib/firebase";
-
+import { doc, Timestamp, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
+import { useFirestoreCollection } from "@/lib/useFirestoreDoc";
 import {
   Card,
   CardHeader,
@@ -35,78 +26,103 @@ import {
   ArrowLeft,
   Home,
   User,
+  Hash,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
+interface FirestoreTimestamp {
+  seconds: number;
+  nanoseconds: number;
+}
+
+interface Appointment {
+  id: string;
+  numericId: string;
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  status: "pending" | "done";
+  listingTitle?: string;
+  listingImage?: string;
+  createdAt?: FirestoreTimestamp;
+  scheduledDate?: any;
+  viewed: boolean;
+}
+
 export default function AppointmentDetailsPage() {
-  const [notFound, setNotFound] = useState(false);
   const { id } = useParams();
-  const [appointment, setAppointment] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
   const router = useRouter();
 
+  // Fetch appointment using numericId
+  const {
+    data: appointments,
+    mutate,
+    isLoading,
+    error,
+  } = useFirestoreCollection<Appointment>("appointments");
+
+  // Find the appointment with matching numericId
+  const appointment = appointments?.find((apt) => apt.numericId === id);
+
+  // Mark as viewed once it's fetched and not already viewed
   useEffect(() => {
-    const fetchAppointment = async () => {
-      if (!id) return;
-
-      try {
-        // Query by numericId instead of document ID
-        const q = query(
-          collection(db, "appointments"),
-          where("numericId", "==", id)
-        );
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-          const docSnap = snapshot.docs[0];
-          const appointmentId = docSnap.id;
-
-          // Mark as viewed
-          await updateDoc(doc(db, "appointments", appointmentId), {
+    if (appointment && appointment.id && !appointment.viewed) {
+      const markAsViewed = async () => {
+        try {
+          await updateDoc(doc(db, "appointments", appointment.id), {
             viewed: true,
           });
-
-          setAppointment({
-            id: appointmentId,
-            ...docSnap.data(),
-            createdAt: docSnap.data().createdAt?.toDate?.() ?? null,
-            scheduledDate: docSnap.data().scheduledDate?.toDate?.() ?? null,
-          });
-        } else {
-          setNotFound(true);
+          // Update local state optimistically
+          mutate((prev) =>
+            prev.map((apt) =>
+              apt.id === appointment.id ? { ...apt, viewed: true } : apt
+            )
+          );
+        } catch (error) {
+          console.error("Failed to mark appointment as viewed:", error);
         }
-      } catch (error) {
-        console.error("Error fetching appointment:", error);
-        toast.error("Failed to load appointment details");
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
+      markAsViewed();
+    }
+  }, [appointment, mutate]);
 
-    fetchAppointment();
-  }, [id]);
-
-  const handleStatusUpdate = async (newStatus: string) => {
+  const handleStatusUpdate = async (newStatus: "pending" | "done") => {
     if (!appointment) return;
 
     try {
-      setUpdating(true);
-      await updateDoc(docRef(db, "appointments", appointment.id), {
+      // Optimistic update
+      mutate((prev) =>
+        prev.map((apt) =>
+          apt.id === appointment.id
+            ? { ...apt, status: newStatus, viewed: true }
+            : apt
+        )
+      );
+
+      await updateDoc(doc(db, "appointments", appointment.id), {
         status: newStatus,
+        viewed: true,
       });
-      setAppointment({ ...appointment, status: newStatus });
+
       toast.success(`Appointment marked as ${newStatus}`);
     } catch (error) {
-      console.error("Error updating status:", error);
+      console.error("Update failed:", error);
       toast.error("Failed to update status");
-    } finally {
-      setUpdating(false);
+
+      // Rollback optimistic update
+      mutate((prev) =>
+        prev.map((apt) =>
+          apt.id === appointment.id
+            ? { ...apt, status: appointment.status }
+            : apt
+        )
+      );
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-10 w-64" />
@@ -124,7 +140,7 @@ export default function AppointmentDetailsPage() {
     );
   }
 
-  if (notFound && !appointment) {
+  if (error || !appointment) {
     return (
       <div className="container mx-auto p-6">
         <Card className="border-red-200 bg-red-50">
@@ -133,7 +149,7 @@ export default function AppointmentDetailsPage() {
               Appointment Not Found
             </CardTitle>
             <CardDescription>
-              The requested appointment could not be found.
+              The requested appointment could not be found or does not exist.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -150,7 +166,6 @@ export default function AppointmentDetailsPage() {
       </div>
     );
   }
-
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -162,15 +177,13 @@ export default function AppointmentDetailsPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to Appointments
         </Button>
-
-        {appointment?.status === "pending" && (
+        {appointment.status === "pending" && (
           <Button
             onClick={() => handleStatusUpdate("done")}
-            disabled={updating}
             className="gap-2 bg-green-600 hover:bg-green-700"
           >
             <CheckCircle className="w-4 h-4" />
-            {updating ? "Updating..." : "Mark as Completed"}
+            Mark as Completed
           </Button>
         )}
       </div>
@@ -183,10 +196,12 @@ export default function AppointmentDetailsPage() {
                 <User className="w-6 h-6" />
                 {appointment.name}
               </CardTitle>
-              <CardDescription className="flex items-center gap-2 mt-1">
-                <Home className="w-4 h-4" />
-                {appointment.listingTitle || "Property viewing"}
-              </CardDescription>
+              {appointment.listingTitle && (
+                <CardDescription className="flex items-center gap-2 mt-1">
+                  <Home className="w-4 h-4" />
+                  {appointment.listingTitle}
+                </CardDescription>
+              )}
             </div>
             <Badge
               variant={appointment.status === "done" ? "default" : "secondary"}
@@ -208,16 +223,20 @@ export default function AppointmentDetailsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Contact Info + Message */}
             <div className="space-y-6">
+              {/* Contact Information */}
               <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-gray-100"></div>
+                <div className="p-2 rounded-full bg-gray-100 dark:bg-slate-800">
+                  <User className="w-5 h-5 text-gray-500" />
+                </div>
                 <div className="space-y-1">
                   <h3 className="text-lg font-medium">{appointment.name}</h3>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Mail className="w-4 h-4" />
                     <Link
                       href={`mailto:${appointment.email}`}
-                      className="hover:underline"
+                      className="hover:text-blue-600 hover:underline"
                     >
                       {appointment.email}
                     </Link>
@@ -226,46 +245,80 @@ export default function AppointmentDetailsPage() {
                     <Phone className="w-4 h-4" />
                     <Link
                       href={`tel:${appointment.phone}`}
-                      className="hover:underline"
+                      className="hover:text-blue-600 hover:underline"
                     >
                       {appointment.phone}
                     </Link>
                   </div>
                 </div>
               </div>
-
+              {/* Message Section */}
               <div className="space-y-4">
                 <h4 className="font-medium flex items-center gap-2">
                   <MessageSquare className="w-5 h-5" />
                   Client Message
                 </h4>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  {appointment.message || "No message provided."}
+                <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                  <p className="text-sm leading-relaxed">
+                    {appointment.message || "No message provided."}
+                  </p>
                 </div>
               </div>
             </div>
+
+            {/* Dates + Image */}
             <div className="space-y-6">
               <div className="space-y-4">
                 <h4 className="font-medium flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
                   Appointment Details
                 </h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Booked On:</span>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <span className="font-medium">Status:</span>
+                    <Badge
+                      variant={
+                        appointment.status === "done" ? "default" : "secondary"
+                      }
+                      className={
+                        appointment.status === "done"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-amber-100 text-amber-800"
+                      }
+                    >
+                      {appointment.status.charAt(0).toUpperCase() +
+                        appointment.status.slice(1)}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <span className="font-medium">Booked On:</span>
                     <span>
                       {appointment.createdAt
-                        ? format(appointment.createdAt, "PPpp")
-                        : "Not available"}
+                        ? format(
+                            new Date(appointment.createdAt.seconds * 1000),
+                            "PPpp"
+                          )
+                        : "N/A"}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Scheduled For:</span>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <span className="font-medium">Scheduled For:</span>
                     <span>
                       {appointment.scheduledDate
-                        ? format(appointment.scheduledDate, "PPpp")
+                        ? format(
+                            new Date(appointment.scheduledDate.seconds * 1000),
+                            "PPpp"
+                          )
                         : "Not scheduled"}
                     </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <span className="font-medium">Viewed:</span>
+                    <Badge
+                      variant={appointment.viewed ? "success" : "secondary"}
+                    >
+                      {appointment.viewed ? "Yes" : "No"}
+                    </Badge>
                   </div>
                 </div>
               </div>
@@ -275,12 +328,11 @@ export default function AppointmentDetailsPage() {
                   <h4 className="font-medium">Property Image</h4>
                   <div className="rounded-lg overflow-hidden border">
                     <img
-                      src={appointment.listingImage}
-                      alt={appointment.listingTitle}
+                      src={appointment.listingImage || "/placeholder.svg"}
+                      alt={appointment.listingTitle || "Property"}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "/placeholder-listing.jpg";
+                        (e.target as HTMLImageElement).src = "/Big Home1";
                       }}
                     />
                   </div>

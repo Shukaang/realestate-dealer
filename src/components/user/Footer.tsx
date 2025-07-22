@@ -58,7 +58,7 @@ const Footer = () => {
         {/* Quick Links */}
         <div>
           <h3 className="text-lg font-semibold mb-3">Quick Links</h3>
-          <ul className="space-y-2 text-sm text-gray-400">
+          <ul className="space-y-2 text-sm text-gray-400 inline-block">
             <li className="hover:text-white">
               <Link href="/">Home</Link>
             </li>
@@ -91,7 +91,7 @@ const Footer = () => {
             </li>
             <li className="flex items-start gap-2">
               <FontAwesomeIcon icon={faPhone} className="text-blue-400 mt-1" />
-              <span>+1 (555) 123-4567</span>
+              <span>+251 991 868 812</span>
             </li>
             <li className="flex items-start gap-2">
               <FontAwesomeIcon

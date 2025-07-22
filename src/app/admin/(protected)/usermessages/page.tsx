@@ -1,9 +1,9 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -13,6 +13,7 @@ import {
   deleteDoc,
   query,
   orderBy,
+  Timestamp,
 } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,14 +25,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -45,6 +39,7 @@ import {
   Mail,
   Search,
   AlertTriangle,
+  EyeOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -58,14 +53,30 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useFirestoreCollection } from "@/lib/useFirestoreDoc";
+import { mutate } from "swr";
+
+interface UserMessage {
+  id: string;
+  viewed: boolean;
+  createdAt: Timestamp;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subject: string;
+  message: string;
+}
 
 export default function AdminUserMessagesPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [messages, setMessages] = useState<any[]>([]);
-  const [filter, setFilter] = useState<"all" | "viewed" | "unviewed">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const { data: messagesData = [] } = useFirestoreCollection("userMessages");
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -96,6 +107,20 @@ export default function AdminUserMessagesPage() {
         prev.map((m) => (m.id === id ? { ...m, viewed: true } : m))
       );
       toast.success("Marked as viewed");
+      mutate("userMessages");
+    } catch (error) {
+      toast.error("Failed to update message");
+    }
+  };
+
+  const markAsUnviewed = async (id: string) => {
+    try {
+      await updateDoc(doc(db, "userMessages", id), { viewed: false });
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, viewed: false } : m))
+      );
+      toast.success("Marked as unviewed");
+      mutate("userMessages");
     } catch (error) {
       toast.error("Failed to update message");
     }
@@ -121,21 +146,44 @@ export default function AdminUserMessagesPage() {
     }
   };
 
-  const filteredMessages = messages
-    .filter((m) =>
-      filter === "all" ? true : filter === "viewed" ? m.viewed : !m.viewed
-    )
-    .filter((m) => {
-      if (!searchQuery) return true;
-      const searchLower = searchQuery.toLowerCase();
-      return (
-        m.firstName?.toLowerCase().includes(searchLower) ||
-        m.lastName?.toLowerCase().includes(searchLower) ||
-        m.email?.toLowerCase().includes(searchLower) ||
-        m.subject?.toLowerCase().includes(searchLower) ||
-        m.message?.toLowerCase().includes(searchLower)
+  // Get filter from URL with same logic
+  const filter = useMemo(() => {
+    const param = searchParams.get("filter");
+    return param === "viewed" || param === "unviewed" ? param : "all";
+  }, [searchParams]);
+
+  // Handle filter change with URL update
+  const handleFilterChange = (newFilter: "all" | "viewed" | "unviewed") => {
+    const params = new URLSearchParams(searchParams);
+    if (newFilter === "all") {
+      params.delete("filter");
+    } else {
+      params.set("filter", newFilter);
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
+  // Filter messages with identical logic
+  const filteredMessages = useMemo(() => {
+    return (messagesData as UserMessage[])
+      .filter((m) =>
+        filter === "all" ? true : filter === "viewed" ? m.viewed : !m.viewed
+      )
+      .sort(
+        (a, b) =>
+          b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()
       );
-    });
+  }, [messagesData, filter]).filter((m) => {
+    if (!searchQuery) return true;
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      m.firstName?.toLowerCase().includes(searchLower) ||
+      m.lastName?.toLowerCase().includes(searchLower) ||
+      m.email?.toLowerCase().includes(searchLower) ||
+      m.subject?.toLowerCase().includes(searchLower) ||
+      m.message?.toLowerCase().includes(searchLower)
+    );
+  });
 
   const getInitials = (firstName?: string, lastName?: string) => {
     const first = firstName?.[0] || "";
@@ -147,40 +195,40 @@ export default function AdminUserMessagesPage() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 dark:bg-gradient-to-br dark:from-blue-950 dark:to-slate-900">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800">
+            <CardTitle className="text-sm font-medium text-blue-800 dark:text-gray-400">
               Total Messages
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-900">
+            <div className="text-3xl font-bold text-blue-800">
               {messages.length}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 dark:border-blue-200 dark:bg-gradient-to-br dark:from-slate-900 dark:to-blue-950">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-amber-800">
+            <CardTitle className="text-sm font-medium text-amber-800 dark:text-gray-400">
               Unviewed
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-amber-900">
+            <div className="text-3xl font-bold text-amber-900 dark:text-blue-800">
               {messages.filter((m) => !m.viewed).length}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 dark:border-blue-200 dark:bg-gradient-to-br dark:from-blue-950 dark:to-slate-900">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">
+            <CardTitle className="text-sm font-medium text-green-800 dark:text-gray-400">
               Viewed
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-900">
+            <div className="text-3xl font-bold text-green-900 dark:text-blue-800">
               {messages.filter((m) => m.viewed).length}
             </div>
           </CardContent>
@@ -218,7 +266,7 @@ export default function AdminUserMessagesPage() {
           <div className="p-4 border-b flex flex-wrap items-center gap-2">
             <Button
               variant={filter === "all" ? "default" : "outline"}
-              onClick={() => setFilter("all")}
+              onClick={() => handleFilterChange("all")}
               className="rounded-full gap-2"
             >
               <Mail className="w-4 h-4" />
@@ -226,23 +274,32 @@ export default function AdminUserMessagesPage() {
             </Button>
             <Button
               variant={filter === "unviewed" ? "default" : "outline"}
-              onClick={() => setFilter("unviewed")}
+              onClick={() => handleFilterChange("unviewed")}
               className="rounded-full gap-2"
             >
-              <Eye className="w-4 h-4" />
+              <EyeOff className="w-4 h-4" />
               Unviewed
             </Button>
             <Button
               variant={filter === "viewed" ? "default" : "outline"}
-              onClick={() => setFilter("viewed")}
+              onClick={() => handleFilterChange("viewed")}
               className="rounded-full gap-2"
             >
+              <Eye className="w-4 h-4" />
               Viewed
             </Button>
           </div>
 
           {/* Messages List */}
           <div className="divide-y">
+            <CardFooter className="rounded-b-lg px-4 py-3">
+              <p className="text-sm text-muted-foreground">
+                Showing{" "}
+                <span className="font-medium">{filteredMessages.length}</span>{" "}
+                of <span className="font-medium">{messages.length}</span>{" "}
+                messages
+              </p>
+            </CardFooter>
             {loading ? (
               <div className="flex justify-center items-center min-h-screen">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-700" />
@@ -303,6 +360,14 @@ export default function AdminUserMessagesPage() {
                                   Mark as Viewed
                                 </DropdownMenuItem>
                               )}
+                              {msg.viewed && (
+                                <DropdownMenuItem
+                                  onClick={() => markAsUnviewed(msg.id)}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Mark as Unviewed
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => handleDeleteClick(msg.id)}
                                 className="text-red-600"
@@ -342,14 +407,6 @@ export default function AdminUserMessagesPage() {
             )}
           </div>
         </CardContent>
-
-        <CardFooter className="rounded-b-lg px-4 py-3">
-          <p className="text-sm text-muted-foreground">
-            Showing{" "}
-            <span className="font-medium">{filteredMessages.length}</span> of{" "}
-            <span className="font-medium">{messages.length}</span> messages
-          </p>
-        </CardFooter>
       </Card>
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

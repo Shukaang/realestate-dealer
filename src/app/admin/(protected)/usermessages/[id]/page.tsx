@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function MessageDetailPage() {
   const { id } = useParams();
@@ -25,13 +26,26 @@ export default function MessageDetailPage() {
 
   useEffect(() => {
     const fetchMessage = async () => {
-      const ref = doc(db, "userMessages", id as string);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        setMessage({ id: snap.id, ...snap.data() });
+      try {
+        const ref = doc(db, "userMessages", id as string);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const messageData = { id: snap.id, ...snap.data() };
+          setMessage(messageData);
+
+          // 🔥 Auto mark as viewed if not already
+          if (!messageData.viewed) {
+            await updateDoc(ref, { viewed: true });
+            setMessage((prev: any) => ({ ...prev, viewed: true }));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch message:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
+
     fetchMessage();
   }, [id]);
 
@@ -85,11 +99,15 @@ export default function MessageDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300">
           <div>
             <p className="text-sm text-gray-500">Email</p>
-            <p className="font-medium">{message.email}</p>
+            <p className="font-medium">
+              <Link href={`mailto:${message.email}`}>{message.email}</Link>
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Phone</p>
-            <p className="font-medium">{message.phone}</p>
+            <p className="font-medium">
+              <Link href={`tel:${message.phone}`}>{message.phone}</Link>
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Subject</p>

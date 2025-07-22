@@ -5,13 +5,13 @@ const Testimonial = () => {
   const containerRef = useRef(null);
 
   const cards = [
-    { id: 1, quote: "HomeVista helped us navigate the complex world of real estate financing with ease.", author: "Darrell Steward", position: "CEO, IBM" },
-    { id: 2, quote: "The neighborhood we found through HomeVista is more than just a place to live", author: "Wade Warren", position: "Manager, MasterCard" },
+    { id: 1, quote: "EthioAddis helped us navigate the complex world of real estate financing with ease.", author: "Darrell Steward", position: "CEO, IBM" },
+    { id: 2, quote: "The neighborhood we found through EthioAddis is more than just a place to live", author: "Wade Warren", position: "Manager, MasterCard" },
     { id: 3, quote: "From the moment we walked through the door of our new home, new city daunting.", author: "Arlene McCoy", position: "CEO, Apple" },
-    { id: 4, quote: "HomeVista helped us navigate the complex world of real estate financing with ease.", author: "Savannah Nguyen", position: "Johnson & Johnson" },
-    { id: 5, quote: "The best decision we made in our home buying journey was choosing HomeVista.", author: "Robert Fox", position: "CTO, Microsoft" },
+    { id: 4, quote: "EthioAddis helped us navigate the complex world of real estate financing with ease.", author: "Savannah Nguyen", position: "Johnson & Johnson" },
+    { id: 5, quote: "The best decision we made in our home buying journey was choosing EthioAddis.", author: "Robert Fox", position: "CTO, Microsoft" },
     { id: 6, quote: "Professional service that exceeded our expectations in every way.", author: "Jenny Wilson", position: "Director, Google" },
-    { id: 7, quote: "Found our dream home in record time thanks to HomeVista's expertise.", author: "Albert Flores", position: "VP, Amazon" },
+    { id: 7, quote: "Found our dream home in record time thanks to EthioAddis's expertise.", author: "Albert Flores", position: "VP, Amazon" },
     { id: 8, quote: "A seamless experience from start to finish. Highly recommended!", author: "Kathryn Murphy", position: "COO, Tesla" },
   ];
 
@@ -43,11 +43,11 @@ const Testimonial = () => {
         <div className='text-center px-4 md:px-0'>
   <h1 className='text-2xl sm:text-3xl md:text-4xl font-semibold mb-4 sm:mb-5 leading-tight'>
     Testimonials From Happy<br className="hidden sm:block" />
-    ShuHomes Clients
+    EthioAddis Clients
   </h1>
   <p className='text-gray-700 text-sm sm:text-base mb-8 sm:mb-10 leading-relaxed'>
     Discovering the True Essence of Home through the Words of Satisfied<br className="hidden sm:block" />
-    Clients, as ShuHomes Touches Lives around the Globe.
+    Clients, as EthioAddis Touches Lives around the Globe.
   </p>
 </div>
 

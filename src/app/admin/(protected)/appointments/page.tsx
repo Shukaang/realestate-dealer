@@ -133,7 +133,7 @@ export default function AppointmentsPage() {
           const listing = listingsData[a.listingNumericId];
           return {
             ...a,
-            listingImage: listing?.images?.[0] || "/placeholder-listing.jpg",
+            listingImage: listing?.images?.[0] || "/Big Home1.jpg",
             listingTitle: listing?.title || a.listingTitle,
           };
         });
@@ -224,7 +224,7 @@ export default function AppointmentsPage() {
     );
   }
 
-  if (isLoading || isProcessing) {
+  if (isLoading) {
     return (
       <div className="p-6 space-y-4">
         <Skeleton className="h-10 w-64" />
@@ -328,15 +328,19 @@ export default function AppointmentsPage() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="relative w-12 h-12 rounded-md overflow-hidden border">
-                              <img
-                                src={appointment.listingImage}
-                                alt={appointment.listingTitle}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src =
-                                    "/placeholder-listing.jpg";
-                                }}
-                              />
+                              <Link
+                                href={`/admin/listings/${appointment.listingNumericId}`}
+                              >
+                                <img
+                                  src={appointment.listingImage}
+                                  alt={appointment.listingTitle}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      "/placeholder-listing.jpg";
+                                  }}
+                                />
+                              </Link>
                             </div>
                             <span className="font-medium">
                               {appointment.listingTitle}
@@ -423,7 +427,7 @@ export default function AppointmentsPage() {
                     <div className="flex items-center justify-between">
                       <div className="text-lg font-semibold">
                         <Link
-                          href={`/admin/appointments/${appointment.numericId}`} // Changed to use numericId
+                          href={`/admin/appointments/${appointment.numericId}`}
                           className="hover:underline"
                         >
                           {appointment.name}
@@ -450,8 +454,7 @@ export default function AppointmentsPage() {
                         alt={appointment.listingTitle}
                         className="w-16 h-16 object-cover rounded-md border"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "/placeholder-listing.jpg";
+                          (e.target as HTMLImageElement).src = "/Big Home1.jpg";
                         }}
                       />
                       <div className="font-medium">

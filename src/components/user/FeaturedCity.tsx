@@ -58,6 +58,7 @@ export default function FeaturedCities() {
                 alt={city.name}
                 width={400}
                 height={600}
+                priority
                 className="w-full h-78 object-cover transform group-hover:scale-105 transition duration-500"
               />
 

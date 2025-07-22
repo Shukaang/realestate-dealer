@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // Next 13 app router way
+import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -19,43 +19,40 @@ const AdminLoginPage = () => {
     setError("");
 
     try {
-      // Sign in with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
         password
       );
-      const uid = userCredential.user.uid;
+      const user = userCredential.user;
 
-      // Query Firestore admins collection by email
-      const adminsRef = collection(db, "admins");
-      const q = query(adminsRef, where("email", "==", email));
-      const querySnapshot = await getDocs(q);
+      const q = query(collection(db, "admins"), where("email", "==", email));
+      const snapshot = await getDocs(q);
 
-      if (!querySnapshot.empty) {
-        // Admin found, proceed to admin dashboard
-        router.push("/admin");
-      } else {
-        // No admin profile found with this email
-        setError("Access denied: Not an admin.");
-        // Optional: sign out the user immediately
+      if (snapshot.empty) {
+        setError("Access denied: Not an admin");
         await auth.signOut();
+      } else {
+        router.push("/admin");
       }
-    } catch (err: any) {
-      console.error(err);
-      setError("Invalid email or password.");
+    } catch (error: any) {
+      setError(
+        error.message.includes("auth/")
+          ? "Invalid email or password"
+          : error.message
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-800 px-4">
       <form
         onSubmit={handleLogin}
-        className="bg-white p-8 rounded shadow-md w-full max-w-md"
+        className="bg-white dark:bg-slate-900 p-8 rounded shadow-md w-full max-w-md"
       >
-        <h2 className="text-2xl dark:text-slate-800 font-bold mb-6 text-center">
+        <h2 className="text-2xl dark:text-gray-400 font-bold mb-6 text-center">
           Admin Login
         </h2>
 
@@ -66,7 +63,7 @@ const AdminLoginPage = () => {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 dark:text-gray-600 py-2 mb-4 border rounded"
+          className="w-full px-4 dark:text-gray-300 py-2 mb-4 border rounded"
           required
         />
 
@@ -75,13 +72,13 @@ const AdminLoginPage = () => {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 dark:text-gray-600 py-2 mb-4 border rounded"
+          className="w-full px-4 dark:text-gray-300 py-2 mb-4 border rounded"
           required
         />
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 flex justify-center items-center"
+          className="w-full bg-blue-700 text-white dark:text-gray-300 py-2 rounded hover:bg-blue-800 flex justify-center items-center"
           disabled={loading}
         >
           {loading ? (

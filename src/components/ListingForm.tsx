@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import {
   ref,
   deleteObject,
@@ -11,6 +11,21 @@ import {
 } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+
+const featureOptions = [
+  "Central Air Conditioning",
+  "Gourmet Kitchen",
+  "Smart Home Technology",
+  "Fitness Center Access",
+  "24/7 Security",
+  "Laundry Room",
+  "Hardwood Flooring",
+  "Private Balcony",
+  "Swimming Pool",
+  "Garage Parking",
+  "High Ceilings",
+];
 
 export default function ListingForm({ initialData }: { initialData: any }) {
   const router = useRouter();
@@ -22,6 +37,7 @@ export default function ListingForm({ initialData }: { initialData: any }) {
     location: "",
     type: "",
     status: "available",
+    for: "Sale",
     area: 0,
     bedrooms: 0,
     bathrooms: 0,
@@ -32,6 +48,36 @@ export default function ListingForm({ initialData }: { initialData: any }) {
     [index: number]: File | null;
   }>({});
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+
+  // Utility function to delete images from storage
+  const deleteFromStorageByUrl = async (url: string) => {
+    try {
+      // Extract the path from the download URL
+      const decodedUrl = decodeURIComponent(url.split("?")[0]);
+      const path = decodedUrl.split("/o/")[1];
+      const imageRef = ref(storage, path);
+      await deleteObject(imageRef);
+    } catch (err) {
+      console.warn("Failed to delete old image:", err);
+    }
+  };
+
+  // Utility function to upload new images
+  const uploadNewImage = async (file: File): Promise<string> => {
+    const path = `listings/${Date.now()}_${file.name}`;
+    const imageRef = ref(storage, path);
+    await uploadBytes(imageRef, file);
+    return await getDownloadURL(imageRef);
+  };
+
+  const toggleFeature = (feature: string) => {
+    setSelectedFeatures((prev) =>
+      prev.includes(feature)
+        ? prev.filter((f) => f !== feature)
+        : [...prev, feature]
+    );
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -43,12 +89,14 @@ export default function ListingForm({ initialData }: { initialData: any }) {
         location: initialData.location || "",
         type: initialData.type || "",
         status: initialData.status || "available",
+        for: initialData.for || "Sale",
         area: Number(initialData.area) || 0,
         bedrooms: Number(initialData.bedrooms) || 0,
         bathrooms: Number(initialData.bathrooms) || 0,
       });
 
       setExistingImages(initialData.images || []);
+      setSelectedFeatures(initialData.amenities || []);
     }
   }, [initialData]);
 
@@ -70,63 +118,57 @@ export default function ListingForm({ initialData }: { initialData: any }) {
     setReplacedImages((prev) => ({ ...prev, [index]: file }));
   };
 
-  const deleteFromStorageByUrl = async (url: string) => {
-    try {
-      const decodedUrl = decodeURIComponent(url.split("?")[0]);
-      const path = decodedUrl.split("/o/")[1];
-      const imageRef = ref(storage, path);
-      await deleteObject(imageRef);
-    } catch (err) {
-      console.warn("Failed to delete old image:", err);
-    }
-  };
-
-  const uploadNewImage = async (file: File): Promise<string> => {
-    const path = `listings/${Date.now()}_${file.name}`;
-    const imageRef = ref(storage, path);
-    await uploadBytes(imageRef, file);
-    return await getDownloadURL(imageRef);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!initialData?.docId) return toast.error("Missing document ID");
     setIsUpdating(true);
 
     try {
+      // Handle image updates
       const updatedImages = [...existingImages];
       for (const index in replacedImages) {
         const idx = parseInt(index);
         const file = replacedImages[idx];
         if (!file) continue;
 
-        if (existingImages[idx])
+        if (existingImages[idx]) {
           await deleteFromStorageByUrl(existingImages[idx]);
+        }
 
         const newUrl = await uploadNewImage(file);
         updatedImages[idx] = newUrl;
       }
-
-      const refDoc = doc(db, "listings", initialData.docId);
-      await updateDoc(refDoc, {
+      // Prepare update data
+      const updateData: any = {
         ...formData,
         images: updatedImages,
-        updatedAt: new Date(),
-      });
+        amenities: selectedFeatures,
+        updatedAt: Timestamp.now(),
+      };
 
+      // Handle soldDate based on status
+      if (formData.status === "sold") {
+        updateData.soldDate = Timestamp.now();
+      } else {
+        updateData.soldDate = null;
+      }
+
+      // Update document
+      const refDoc = doc(db, "listings", initialData.docId);
+      await updateDoc(refDoc, updateData);
       toast.success("Listing updated successfully!", {
         duration: 1500,
         onAutoClose: () => {
-          router.push("/admin/listings");
           window.scrollTo(0, 0);
+          router.push("/admin/listings");
         },
       });
     } catch (err) {
       console.error(err);
       toast.error("Failed to update listing!");
+    } finally {
+      setIsUpdating(false);
     }
-
-    setIsUpdating(false);
   };
 
   return (
@@ -182,6 +224,16 @@ export default function ListingForm({ initialData }: { initialData: any }) {
         >
           <option value="available">Available</option>
           <option value="sold">Sold</option>
+          <option value="pending">Pending</option>
+        </select>
+        <select
+          name="for"
+          value={formData.for}
+          onChange={handleInputChange}
+          className={inputStyle}
+        >
+          <option value="Sale">Sale</option>
+          <option value="Rent">Rent</option>
         </select>
       </div>
       <textarea
@@ -200,6 +252,30 @@ export default function ListingForm({ initialData }: { initialData: any }) {
         placeholder="Overview"
         className={inputStyle}
       />
+
+      {/* Features Section */}
+      <div className="p-6 rounded-lg shadow space-y-4">
+        <h3 className="text-lg font-semibold">Property Features</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {featureOptions.map((feature) => (
+            <div
+              key={feature}
+              className="flex items-center space-x-2 border rounded p-1"
+            >
+              <input
+                type="checkbox"
+                id={`feature-${feature}`}
+                checked={selectedFeatures.includes(feature)}
+                onChange={() => toggleFeature(feature)}
+                className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+              />
+              <label htmlFor={`feature-${feature}`} className="text-sm">
+                {feature}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
@@ -239,13 +315,9 @@ export default function ListingForm({ initialData }: { initialData: any }) {
         </div>
       </div>
 
-      <button
-        type="submit"
-        className="w-full bg-blue-700 text-white py-2 rounded hover:bg-blue-800 transition"
-        disabled={isUpdating}
-      >
+      <Button type="submit" className="w-full" disabled={isUpdating}>
         {isUpdating ? "Saving..." : "Save Changes"}
-      </button>
+      </Button>
     </form>
   );
 }

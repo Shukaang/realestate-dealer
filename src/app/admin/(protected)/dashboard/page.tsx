@@ -1,209 +1,486 @@
 "use client";
 
+import { useMemo } from "react";
 import { useFirestoreCollection } from "@/lib/useFirestoreDoc";
-import { Doughnut } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import dayjs from "dayjs";
+import { Doughnut, Bar, Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+} from "chart.js";
+import {
+  HomeIcon,
+  CurrencyDollarIcon,
+  CalendarIcon,
+  EnvelopeIcon,
+  BuildingOfficeIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
+import { SalesChart } from "@/components/SalesChart";
 import Link from "next/link";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement
+);
 
-const TrendCard = ({
-  title,
-  count,
-  color,
-}: {
-  title: string;
-  count: number;
-  color: string;
-}) => {
-  const initialGoal = count < 5 ? 5 : Math.ceil(count / 5) * 5;
-  const goal = count >= initialGoal ? initialGoal + 5 : initialGoal;
+const Dashboard = () => {
+  const {
+    data: listings = [],
+    loading: listingsLoading,
+    error: listingsError,
+  } = useFirestoreCollection<any>("listings");
+  const {
+    data: appointments = [],
+    loading: appointmentsLoading,
+    error: appointmentsError,
+  } = useFirestoreCollection<any>("appointments");
+  const {
+    data: messages = [],
+    loading: messagesLoading,
+    error: messagesError,
+  } = useFirestoreCollection<any>("userMessages");
 
-  const data = {
-    labels: [title, "Remaining"],
+  // Data processing
+  const soldListings = useMemo(
+    () => listings.filter((l) => l.status === "sold"),
+    [listings]
+  );
+  const activeListings = useMemo(
+    () => listings.filter((l) => l.status === "available"),
+    [listings]
+  );
+  const pendingListings = useMemo(
+    () => listings.filter((l) => l.status === "pending"),
+    [listings]
+  );
+
+  // Appointment status counts
+  const completedAppointments = useMemo(
+    () => appointments.filter((a) => a.status === "done").length,
+    [appointments]
+  );
+  const pendingAppointments = useMemo(
+    () => appointments.filter((a) => a.status !== "done").length,
+    [appointments]
+  );
+
+  // Message status counts
+  const readMessages = useMemo(
+    () => messages.filter((m) => m.viewed).length,
+    [messages]
+  );
+  const unreadMessages = useMemo(
+    () => messages.filter((m) => !m.viewed).length,
+    [messages]
+  );
+
+  // Visualization data
+  const statusDistribution = {
+    labels: ["Available", "Sold", "Pending"],
     datasets: [
       {
-        data: [count, Math.max(goal - count, 0)],
-        backgroundColor: [color, "#e5e7eb"],
-        borderWidth: 0,
+        data: [
+          activeListings.length,
+          soldListings.length,
+          pendingListings.length,
+        ],
+        backgroundColor: ["#4f46e5", "#10b981", "#f59e0b"],
       },
     ],
   };
 
+  const appointmentStatusDistribution = {
+    labels: ["Completed", "Pending"],
+    datasets: [
+      {
+        data: [completedAppointments, pendingAppointments],
+        backgroundColor: ["#10b981", "#f59e0b"],
+      },
+    ],
+  };
+
+  const messageStatusDistribution = {
+    labels: ["Read", "Unread"],
+    datasets: [
+      {
+        data: [readMessages, unreadMessages],
+        backgroundColor: ["#3b82f6", "#93c5fd"],
+      },
+    ],
+  };
+
+  // Key metrics
+  const totalSoldAmount = useMemo(
+    () =>
+      soldListings.reduce(
+        (sum, listing) => sum + (Number(listing.price) || 0),
+        0
+      ),
+    [soldListings]
+  );
+
+  const averagePrice = useMemo(() => {
+    const prices = activeListings.map((l) => Number(l.price) || 0);
+    return prices.length
+      ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
+      : 0;
+  }, [activeListings]);
+
+  // Improved price distribution with dynamic ranges
+  const priceDistribution = useMemo(() => {
+    const prices = listings.map((l) => Number(l.price) || 0);
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
+
+    // Calculate dynamic ranges based on actual data
+    const rangeSize = Math.ceil((maxPrice - minPrice) / 5);
+    const ranges = [];
+
+    for (let i = 0; i < 5; i++) {
+      const lower = minPrice + i * rangeSize;
+      const upper = minPrice + (i + 1) * rangeSize;
+      ranges.push({
+        label: `ETB ${(lower / 1000000).toFixed(1)}M - ${(
+          upper / 1000000
+        ).toFixed(1)}M`,
+        min: lower,
+        max: upper,
+      });
+    }
+
+    return {
+      labels: ranges.map((r) => r.label),
+      datasets: [
+        {
+          label: "Listings by Price Range",
+          data: ranges.map(
+            (range) =>
+              listings.filter((l) => {
+                const price = Number(l.price) || 0;
+                return price >= range.min && price < range.max;
+              }).length
+          ),
+          backgroundColor: [
+            "#93c5fd",
+            "#60a5fa",
+            "#3b82f6",
+            "#1d4ed8",
+            "#1e3a8a",
+          ],
+        },
+      ],
+    };
+  }, [listings]);
+
+  // Location distribution including all listings
+  const locationDistribution = useMemo(() => {
+    const locationCounts = listings.reduce((acc, listing) => {
+      const location = listing.location || "Unknown";
+      acc[location] = (acc[location] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Sort locations by count (descending)
+    const sortedLocations = Object.entries(locationCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6); // Limit to top 6 locations
+
+    return {
+      labels: sortedLocations.map(([location]) => location),
+      datasets: [
+        {
+          label: "Listings by Location",
+          data: sortedLocations.map(([_, count]) => count),
+          backgroundColor: [
+            "#4f46e5",
+            "#10b981",
+            "#f59e0b",
+            "#3b82f6",
+            "#93c5fd",
+            "#60a5fa",
+          ],
+        },
+      ],
+    };
+  }, [listings]);
+
+  if (listingsLoading || appointmentsLoading || messagesLoading)
+    return <DashboardSkeleton />;
+  if (listingsError || appointmentsError || messagesError)
+    return <ErrorState />;
+
   return (
-    <div className="bg-white p-4 rounded shadow text-center space-y-2 w-full">
-      <h2 className="text-sm font-medium text-gray-600 break-words leading-tight">
-        {title}
-      </h2>
-      <div className="w-24 h-24 mx-auto">
-        <Doughnut
-          data={data}
-          options={{
-            cutout: "70%",
-            plugins: { legend: { display: false } },
-            maintainAspectRatio: false,
-          }}
-        />
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Real Estate Dashboard</h1>
+
+        {/* Key Metrics - Now 8 cards in 2 rows */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <MetricCard
+            title="Total Listings"
+            value={listings.length}
+            icon={HomeIcon}
+            href="/admin/listings"
+          />
+          <MetricCard
+            title="Total Sold"
+            value={soldListings.length}
+            icon={BuildingOfficeIcon}
+            href="/admin/listings?status=sold"
+          />
+          <MetricCard
+            title="Total Sold Amount"
+            value={`ETB ${totalSoldAmount.toLocaleString()}`}
+            icon={CurrencyDollarIcon}
+          />
+          <MetricCard
+            title="Active Listings"
+            value={activeListings.length}
+            icon={BuildingOfficeIcon}
+            href="/admin/listings?status=available"
+            trend={activeListings.length > listings.length / 2 ? "up" : "down"}
+          />
+
+          <MetricCard
+            title="Avg. Price"
+            value={`ETB ${averagePrice.toLocaleString()}`}
+            icon={CurrencyDollarIcon}
+          />
+          <MetricCard
+            title="Pending Listings"
+            value={pendingListings.length}
+            icon={ClockIcon}
+            href="/admin/listings?status=pending"
+          />
+          <MetricCard
+            title="Total Appointments"
+            value={appointments.length}
+            icon={CalendarIcon}
+            href="/admin/appointments"
+          />
+          <MetricCard
+            title="Total Messages"
+            value={messages.length}
+            icon={EnvelopeIcon}
+            href="/admin/usermessages"
+          />
+        </div>
+
+        {/* First Row of Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Sales Overview */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm lg:col-span-2">
+            <h2 className="text-lg font-semibold mb-4">Sales Performance</h2>
+            <div className="h-64">
+              <SalesChart />
+            </div>
+          </div>
+          {/* Inventory Status */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">Inventory Status</h2>
+            <div className="h-64">
+              <Doughnut
+                data={statusDistribution}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: "right" } },
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Second Row of Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Price Distribution */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">Price Distribution</h2>
+            <div className="h-64">
+              <Bar
+                data={priceDistribution}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    y: { beginAtZero: true },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Location Distribution */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">
+              Location Distribution
+            </h2>
+            <div className="h-64">
+              <Bar
+                data={locationDistribution}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    y: { beginAtZero: true },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Third Row of Charts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Appointment Status */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">Appointment Status</h2>
+            <div className="h-64">
+              <Doughnut
+                data={appointmentStatusDistribution}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: "right" } },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Message Status */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">Message Status</h2>
+            <div className="h-64">
+              <Doughnut
+                data={messageStatusDistribution}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: "right" } },
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-      <p className="text-lg font-bold text-gray-800">
-        {count}/{goal}
-      </p>
     </div>
   );
 };
 
-const Dashboard = () => {
-  const { data: listings = [] } = useFirestoreCollection<any>("listings");
-  const { data: appointments = [] } =
-    useFirestoreCollection<any>("appointments");
-
-  const soldListings = listings.filter((l) => l.status === "sold");
-  const doneAppointments = appointments.filter((a) => a.status === "done");
-  const totalRevenue = soldListings.reduce(
-    (sum, l) => sum + (Number(l.price) || 0),
-    0
+// Component: Metric Card
+const MetricCard = ({ title, value, icon: Icon, trend, href }) => {
+  const content = (
+    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm h-full">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-500">{title}</p>
+          <p className="text-2xl font-semibold">{value}</p>
+        </div>
+        <div className="p-2 rounded-lg bg-blue-50 dark:bg-slate-700 dark:text-blue-400 text-blue-600">
+          <Icon className="h-5 w-5 font-semibold" />
+        </div>
+      </div>
+      {trend && (
+        <div className="mt-2 text-xs flex items-center">
+          {trend === "up" ? (
+            <>
+              <span className="text-green-500">↑</span>
+              <span className="text-green-500 ml-1">Good</span>
+            </>
+          ) : (
+            <>
+              <span className="text-red-500">↓</span>
+              <span className="text-red-500 ml-1">Needs attention</span>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 
-  // Recent Listings
-  const recentListings = [...listings]
-    .filter((item) => item.createdAt)
-    .sort((a, b) => {
-      const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
-      const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
-      return dateB.getTime() - dateA.getTime();
-    })
-    .slice(0, 5);
+  return href ? (
+    <Link href={href} className="hover:opacity-80 transition-opacity">
+      {content}
+    </Link>
+  ) : (
+    content
+  );
+};
 
-  // Recent Appointments
-  const recentAppointments = [...appointments]
-    .filter((item) => item.createdAt)
-    .sort((a, b) => {
-      const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
-      const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
-      return dateB.getTime() - dateA.getTime();
-    })
-    .slice(0, 5);
-
-  return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-bold text-blue-900">Admin Dashboard</h1>
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <Link href={"/admin/listings"}>
-          <div className="bg-white p-4 rounded dark:bg-gray-800 shadow text-center">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
-              Total Listings
-            </h3>
-            <p className="text-2xl text-slate-950 font-semibold dark:text-gray-300">
-              {listings.length}
-            </p>
-          </div>
-        </Link>
-        <Link href={"/admin/appointments"}>
-          <div className="bg-white p-4 rounded dark:bg-gray-800 shadow text-center">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
-              Total Appointments
-            </h3>
-            <p className="text-2xl text-slate-950 font-semibold dark:text-gray-300">
-              {appointments.length}
-            </p>
-          </div>
-        </Link>
-        <div className="bg-white p-4 rounded dark:bg-gray-800 shadow text-center">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
-            Sold Listings
-          </h3>
-          <p className="text-2xl text-slate-950 font-semibold dark:text-gray-300">
-            {soldListings.length}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded dark:bg-gray-800 shadow text-center">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300">
-            Total Revenue
-          </h3>
-          <p className="text-2xl text-slate-950 font-semibold dark:text-gray-300">
-            ETB {Number(totalRevenue).toLocaleString("en-US")}
-          </p>
-        </div>
+// Loading Skeleton
+const DashboardSkeleton = () => (
+  <div className="min-h-screen bg-gray-50 p-8">
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="h-10 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="h-28 bg-gray-200 rounded animate-pulse"></div>
+        ))}
       </div>
-      {/* Trend Charts */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        <TrendCard title="Listings" count={listings.length} color="#3b82f6" />
-        <TrendCard
-          title="Sold Listings"
-          count={soldListings.length}
-          color="#6366f1"
-        />
-        <TrendCard
-          title="Appointments"
-          count={appointments.length}
-          color="#10b981"
-        />
-        <TrendCard
-          title="Done Appointments"
-          count={doneAppointments.length}
-          color="#f59e0b"
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="h-80 bg-gray-200 rounded animate-pulse lg:col-span-2"></div>
+        <div className="h-80 bg-gray-200 rounded animate-pulse"></div>
       </div>
-      {/* Recent Activity Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="h-80 bg-gray-200 rounded animate-pulse"></div>
+        <div className="h-80 bg-gray-200 rounded animate-pulse"></div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Recent Listings */}
-        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            Recent Listings
-          </h2>
-          <ul className="space-y-2">
-            {recentListings.map((item, index) => {
-              const date = dayjs(
-                item.createdAt?.toDate?.() || item.createdAt
-              ).format("MMM D, YYYY h:mm A");
-              const status = item.status || "created";
-              return (
-                <li
-                  key={index}
-                  className="text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-2"
-                >
-                  <strong className="text-blue-600 dark:text-blue-400">
-                    Listing:
-                  </strong>{" "}
-                  {item.title || "Untitled"} ({status}) –{" "}
-                  <span className="text-xs">{date}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        {/* Recent Appointments */}
-        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            Recent Appointments
-          </h2>
-          <ul className="space-y-2">
-            {recentAppointments.map((item, index) => {
-              const date = dayjs(
-                item.createdAt?.toDate?.() || item.createdAt
-              ).format("MMM D, YYYY h:mm A");
-              const status = item.status || "created";
-              return (
-                <li
-                  key={index}
-                  className="text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-2"
-                >
-                  <strong className="text-green-600 dark:text-green-400">
-                    Appointment:
-                  </strong>{" "}
-                  {item.name || "Unnamed"} ({status}) –{" "}
-                  <span className="text-xs">{date}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <div className="h-80 bg-gray-200 rounded animate-pulse"></div>
+        <div className="h-80 bg-gray-200 rounded animate-pulse"></div>
       </div>
     </div>
-  );
-};
+  </div>
+);
+
+// Error State
+const ErrorState = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="text-center p-6 max-w-md">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-4">
+        <svg
+          className="h-6 w-6 text-red-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+      </div>
+      <h2 className="text-lg font-medium text-gray-900 mb-2">
+        Failed to load data
+      </h2>
+      <p className="text-gray-500 mb-4">
+        Please check your connection and try again
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+      >
+        Retry
+      </button>
+    </div>
+  </div>
+);
 
 export default Dashboard;

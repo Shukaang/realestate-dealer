@@ -3,34 +3,33 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/lib/context/AuthContext";
+import { useAuth, getIdToken } from "@/lib/context/AuthContext";
 import { logout } from "@/lib/firebase";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useFirestoreCollection } from "@/lib/useFirestoreDoc";
 
-export default function AdminNavbar() {
-  interface Admin {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    role: string;
-  }
+interface Admin {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+}
 
+export default function AdminNavbar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, role, hasPermission } = useAuth();
 
   const [isDark, setIsDark] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminName, setAdminName] = useState("");
 
-  // Dark mode setup
+  // Handle dark mode
   useEffect(() => {
     const isSystemDark = window.matchMedia(
       "(prefers-color-scheme: dark)"
     ).matches;
     const savedTheme = localStorage.theme;
-
     const shouldUseDark =
       savedTheme === "dark" || (!savedTheme && isSystemDark);
     setIsDark(shouldUseDark);
@@ -45,7 +44,7 @@ export default function AdminNavbar() {
   };
 
   const { data: adminsData = [] } = useFirestoreCollection("admins");
-  // Fetch Admin Name from Firestore
+
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -61,16 +60,51 @@ export default function AdminNavbar() {
     return () => unsubscribe();
   }, [adminsData]);
 
+  // Hide navbar on login page or outside /admin
   if (pathname === "/admin/login" || !pathname.startsWith("/admin"))
     return null;
 
   const navLinks = [
-    { href: "/admin/dashboard", label: "Dashboard" },
-    { href: "/admin/listings", label: "Listings" },
-    { href: "/admin/appointments", label: "Appointments" },
-    { href: "/admin/upload", label: "Upload" },
-    { href: "/admin/usermessages", label: "Usermessages" },
+    {
+      href: "/admin/dashboard",
+      label: "Dashboard",
+      permission: "view-dashboard",
+    },
+    {
+      href: "/admin/listings",
+      label: "Listings",
+      permission: "view-listings",
+    },
+    {
+      href: "/admin/appointments",
+      label: "Appointments",
+      permission: "view-appointments",
+    },
+    {
+      href: "/admin/upload",
+      label: "Upload",
+      permission: "upload-content",
+    },
+    {
+      href: "/admin/usermessages",
+      label: "Usermessages",
+      permission: "view-messages",
+    },
+    {
+      href: "/admin/settings",
+      label: "Settings",
+      permission: "manage-admins",
+    },
+    {
+      href: "/admin/settings/create-admin",
+      label: "Create Admin",
+      permission: "manage-admins",
+    },
   ];
+
+  const visibleLinks = navLinks.filter((link) =>
+    hasPermission(link.permission)
+  );
 
   return (
     <nav className="bg-gray-900 dark:bg-gray-800 text-white shadow-md sticky top-0 z-50">
@@ -93,17 +127,17 @@ export default function AdminNavbar() {
             <svg className="h-6 w-6" fill="none" stroke="currentColor">
               {mobileMenuOpen ? (
                 <path
+                  d="M6 18L18 6M6 6l12 12"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
                 />
               ) : (
                 <path
+                  d="M4 6h16M4 12h16M4 18h16"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
                 />
               )}
             </svg>
@@ -111,7 +145,7 @@ export default function AdminNavbar() {
 
           {/* Desktop nav */}
           <div className="hidden sm:flex gap-6">
-            {navLinks.map(({ href, label }) => (
+            {visibleLinks.map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
@@ -121,10 +155,8 @@ export default function AdminNavbar() {
               </Link>
             ))}
           </div>
-
-          {/* Dark toggle, name & logout */}
+          {/* Admin Info, Dark Mode, Logout */}
           <div className="hidden sm:flex items-center gap-4 ml-4">
-            {/* Dark Mode */}
             <button
               onClick={toggleDarkMode}
               className="p-2 rounded-md hover:bg-gray-700"
@@ -133,14 +165,12 @@ export default function AdminNavbar() {
               {isDark ? <SunIcon /> : <MoonIcon />}
             </button>
 
-            {/* Admin Name */}
             {adminName && (
               <span className="text-gray-300 truncate max-w-[150px]">
                 {adminName}
               </span>
             )}
 
-            {/* Logout */}
             <button
               onClick={logout}
               className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded transition"
@@ -153,7 +183,7 @@ export default function AdminNavbar() {
         {/* Mobile nav dropdown */}
         {mobileMenuOpen && (
           <div className="sm:hidden flex flex-col gap-3 py-3">
-            {navLinks.map(({ href, label }) => (
+            {visibleLinks.map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
@@ -167,8 +197,13 @@ export default function AdminNavbar() {
                 {label}
               </Link>
             ))}
-
-            {/* Admin Name & Logout */}
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-md hover:bg-gray-700 inline-block"
+              aria-label="Toggle dark mode"
+            >
+              {isDark ? <SunIcon /> : <MoonIcon />}
+            </button>
             <div className="flex justify-between items-center px-4 mt-4">
               {adminName && (
                 <span className="text-blue-600 font-bold truncate max-w-[150px]">
@@ -177,7 +212,7 @@ export default function AdminNavbar() {
               )}
               <button
                 onClick={logout}
-                className="text-sm text-red-400 hover:underline"
+                className="text-sm bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded transition"
               >
                 Logout
               </button>
@@ -196,20 +231,18 @@ function navLinkClass(pathname: string, href: string) {
   }`;
 }
 
-// SVG Icons
 function SunIcon() {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
       className="h-6 w-6 text-yellow-400"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={2}
     >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
+        strokeWidth={2}
         d="M12 3v1m0 16v1m8.66-9h-1M4.34 12h-1m15.07 6.07l-.7-.7M6.34 6.34l-.7-.7m12.02 12.02l-.7-.7M6.34 17.66l-.7-.7M12 7a5 5 0 000 10 5 5 0 000-10z"
       />
     </svg>
@@ -219,16 +252,15 @@ function SunIcon() {
 function MoonIcon() {
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
       className="h-6 w-6 text-gray-300"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={2}
     >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
+        strokeWidth={2}
         d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
       />
     </svg>

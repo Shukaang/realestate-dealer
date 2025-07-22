@@ -1,16 +1,17 @@
 export type Listing = {
-  id: string;
+   id: string;
+  numericId: number;
   title: string;
   location: string;
   price: number;
-  createdAt: any;
+  description?: string;
   images?: string[];
-  numericId: string;
-  type: string;
-  status: string;
+  bedrooms: number;
+  bathrooms: number;
   area: string;
-  views: number;
-  bedrooms: string;
-  bathrooms: string;
-  createdBy: string;
+  type?: string;
+  status?: string;
+  createdAt: any;
+  overview: string;
+  amenities?: string[];
 };

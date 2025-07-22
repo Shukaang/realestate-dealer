@@ -12,14 +12,22 @@ export default function ContactForm() {
     subject: "",
     message: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<any>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent | React.MouseEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const { firstName, email, phone, subject } = formData;
 
+    if (!firstName || !(phone || email) || !subject) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       await addDoc(collection(db, "userMessages"), {
         ...formData,
@@ -37,71 +45,114 @@ export default function ContactForm() {
       });
     } catch (error) {
       toast.error("Failed to send message.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* form inputs go here with name and value set */}
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">
+            First Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            type="text"
+            placeholder="First Name"
+            className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            disabled={isSubmitting}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">
+            Last Name
+          </label>
+          <input
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            type="text"
+            placeholder="Last Name"
+            className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            disabled={isSubmitting}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-sm font-medium text-gray-700">
+          Email <span className="text-red-500">*</span>
+        </label>
         <input
-          name="firstName"
-          value={formData.firstName}
+          name="email"
+          value={formData.email}
           onChange={handleChange}
-          type="text"
-          placeholder="First Name"
-          className="border border-gray-200 px-4 py-2 rounded-md text-sm w-full"
-        />
-        <input
-          name="lastName"
-          value={formData.lastName}
-          onChange={handleChange}
-          type="text"
-          placeholder="Last Name"
-          className="border border-gray-200 px-4 py-2 rounded-md text-sm w-full"
+          type="email"
+          placeholder="Email Address"
+          className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isSubmitting}
         />
       </div>
-      <input
-        name="email"
-        value={formData.email}
-        onChange={handleChange}
-        type="email"
-        placeholder="Email Address"
-        className="border border-gray-200 px-4 py-2 rounded-md text-sm w-full"
-      />
-      <input
-        name="phone"
-        value={formData.phone}
-        onChange={handleChange}
-        type="tel"
-        placeholder="Phone Number"
-        className="border border-gray-200 px-4 py-2 rounded-md text-sm w-full"
-      />
-      <select
-        name="subject"
-        value={formData.subject}
-        onChange={handleChange}
-        className="border px-4 py-2 rounded-md text-sm w-full"
-      >
-        <option value="">Select Subject</option>
-        <option value="General Inquiry">General Inquiry</option>
-        <option value="Property Information">Property Information</option>
-        <option value="Buying a Property">Buying a Property</option>
-        <option value="Selling a Property">Selling a Property</option>
-      </select>
-      <textarea
-        name="message"
-        value={formData.message}
-        onChange={handleChange}
-        rows={5}
-        placeholder="Message"
-        className="border px-4 py-2 rounded-md text-sm w-full"
-      ></textarea>
+
+      <div className="space-y-1">
+        <label className="block text-sm font-medium text-gray-700">
+          Phone <span className="text-red-500">*</span>
+        </label>
+        <input
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          type="tel"
+          placeholder="Phone Number"
+          className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-sm font-medium text-gray-700">
+          Subject <span className="text-red-500">*</span>
+        </label>
+        <select
+          name="subject"
+          value={formData.subject}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isSubmitting}
+        >
+          <option value="">Select Subject</option>
+          <option value="General Inquiry">General Inquiry</option>
+          <option value="Property Information">Property Information</option>
+          <option value="Buying a Property">Buying a Property</option>
+          <option value="Selling a Property">Selling a Property</option>
+        </select>
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-sm font-medium text-gray-700">
+          Message (Optional)
+        </label>
+        <textarea
+          name="message"
+          value={formData.message}
+          onChange={handleChange}
+          rows={4}
+          placeholder="Your message..."
+          className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isSubmitting}
+        ></textarea>
+      </div>
+
       <button
         type="submit"
-        className="w-full bg-blue-700 text-white py-2 rounded-md hover:bg-blue-800 transition"
+        disabled={isSubmitting}
+        className="w-full py-2 px-4 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Send Message
+        {isSubmitting ? "Sending..." : "Send Message"}
       </button>
     </form>
   );

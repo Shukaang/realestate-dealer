@@ -1,66 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { useAuth } from "@/lib/context/AuthContext";
 import AdminNavbar from "@/components/AdminNavbar";
+import { toast } from "sonner";
+import PageLoader from "@/components/shared/PageLoader";
 
-export default function ProtectedLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, role, loading, hasPermission } = useAuth();
   const router = useRouter();
 
+  // 🔐 Permission Guard
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.replace("/admin/login");
-        return;
+    if (!loading && user && role) {
+      const currentPath = window.location.pathname;
+      const allowedPaths = {
+        "/admin/dashboard": "view-dashboard",
+        "/admin/upload": "upload-content",
+        "/admin/settings": "manage-admins",
+        // Add other paths
+      };
+
+      const requiredPermission =
+        allowedPaths[currentPath as keyof typeof allowedPaths];
+
+      if (requiredPermission && !hasPermission(requiredPermission)) {
+        toast.error("Permission denied");
+        router.replace("/admin");
       }
+    }
+  }, [user, role, loading, hasPermission, router]);
 
-      const q = query(
-        collection(db, "admins"),
-        where("email", "==", user.email)
-      );
-      const snapshot = await getDocs(q);
+  // 🔐 Auth Guard
+  useEffect(() => {
+    if (!loading && (!user || !role)) {
+      router.replace("/admin/login");
+    }
+  }, [user, role, loading, router]);
 
-      if (!snapshot.empty) {
-        setIsAdmin(true);
-      } else {
-        router.replace("/admin/login");
-      }
-
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [router]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg text-gray-700">Redirecting...</p>
-      </div>
-    );
-  }
+  // Show loading spinner until we know auth status
+  if (loading || !user || !role) return <PageLoader />;
 
   return (
     <>
       <AdminNavbar />
-      <div className="p-4">{children}</div>
+      <div>{children}</div>
     </>
   );
 }

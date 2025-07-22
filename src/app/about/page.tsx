@@ -23,7 +23,7 @@ const testimonials = [
     image: "/michael.jpg",
     stars: 5,
     message:
-      "Working with EstateElite was an absolute pleasure. Their team guided me through every step of purchasing my dream penthouse. Their expertise made the process seamless.",
+      "Working with EthioAddis was an absolute pleasure. Their team guided me through every step of purchasing my dream penthouse. Their expertise made the process seamless.",
   },
   {
     name: "Sarah Johnson",
@@ -31,7 +31,7 @@ const testimonials = [
     image: "/sarah.jpg",
     stars: 5,
     message:
-      "I can't recommend EstateElite enough! They helped me find the perfect beachfront property within my budget. Their market knowledge saved me thousands.",
+      "I can't recommend EthioAddis enough! They helped me find the perfect beachfront property within my budget. Their market knowledge saved me thousands.",
   },
   {
     name: "David Rodriguez",
@@ -39,7 +39,7 @@ const testimonials = [
     image: "/david.jpg",
     stars: 4,
     message:
-      "After months of searching on my own, I turned to EstateElite and found my dream home within weeks. Their approach and understanding made all the difference.",
+      "After months of searching on my own, I turned to EthioAddis and found my dream home within weeks. Their approach and understanding made all the difference.",
   },
 ];
 
@@ -47,7 +47,7 @@ export default function AboutPage() {
   return (
     <div className="pt-10">
       {/* Hero */}
-      <section className="bg-gray-600 text-white pt-40 pb-35 px-5">
+      <section className="bg-gray-600 text-white py-30 px-5">
         <h1 className="text-4xl  font-bold mb-4">About EthioAddis</h1>
         <p className="text-lg max-w-2xl text-gray-300">
           Discover our story, mission, and the team behind our exceptional real
@@ -60,22 +60,22 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6 py-5">
             <h2 className="text-3xl font-bold">Our Story</h2>
-            <p className="text-gray-700 text-[15px]">
-              Founded in 2010, EstateElite began with a simple mission: to
+            <p className="text-gray-700 text-[16px]">
+              Founded in 2025, EthioAddis began with a simple mission: to
               transform the real estate experience by combining exceptional
               properties with unparalleled service. What started as a small team
               of passionate professionals has grown into one of the most trusted
               names in luxury real estate.
             </p>
-            <p className="text-gray-700 text-[15px]">
+            <p className="text-gray-700 text-[16px]">
               Our journey has been defined by our commitment to excellence and
               our deep understanding of both the market and our clients' needs.
               We believe that finding the perfect property is about more than
               just location and features—it's about finding a place where
               memories will be made and lives will unfold.
             </p>
-            <p className="text-gray-700 text-[15px]">
-              Today, EstateElite stands as a beacon of innovation and integrity
+            <p className="text-gray-700 text-[16px]">
+              Today, EthioAddis stands as a beacon of innovation and integrity
               in the real estate industry. Our portfolio of exclusive properties
               spans prime locations, and our network of satisfied clients
               continues to grow through referrals and repeat business—a
@@ -84,7 +84,7 @@ export default function AboutPage() {
           </div>
           <div className="w-full h-full rounded-md shadow-lg">
             <img
-              src="/Big Home1.jpg"
+              src="/main-hero-bg.png"
               alt="About Pic"
               className="object-cover w-full h-full rounded-md"
             />
@@ -93,7 +93,7 @@ export default function AboutPage() {
       </section>
 
       {/* Mission & Values */}
-      <section className="bg-gray-100 py-16 mb-18">
+      <section className="bg-gray-50 py-16 mb-18">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold mb-10">Our Mission & Values</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -143,7 +143,7 @@ export default function AboutPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <StatBox number="1,200+" label="Properties Sold" />
-            <StatBox number="$2B+" label="Sales Volume" />
+            <StatBox number="$1.2B+" label="Sales Volume" />
             <StatBox number="98%" label="Client Satisfaction" />
             <StatBox number="15+" label="Industry Awards" />
           </div>
@@ -160,7 +160,7 @@ export default function AboutPage() {
             </h2>
             <p className="text-lg text-gray-700 max-w-3xl mx-auto">
               Don&apos;t just take our word for it—hear from our satisfied
-              clients about their experience working with EstateElite.
+              clients about their experience working with EthioAddis.
             </p>
           </div>
 

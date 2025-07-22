@@ -1,24 +1,41 @@
-import useSWR from "swr";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+"use client"
 
-const fetchCollection = async <T>(collectionName: string): Promise<T[]> => {
-  const snap = await getDocs(collection(db, collectionName));
-  return snap.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as T[];
-};
+import { useEffect, useState } from "react"
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore"
+import { db } from "@/lib/firebase/client"
 
-export const useFirestoreCollection = <T>(collectionName: string) => {
-  const { data, error, isLoading, mutate } = useSWR(collectionName, () =>
-    fetchCollection<T>(collectionName)
-  );
+export function useFirestoreCollection<T>(collectionName: string) {
+  const [data, setData] = useState<T[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
-  return {
-    data: data || [],
-    error,
-    isLoading,
-    mutate,
-  };
-};
+  useEffect(() => {
+    const q = query(collection(db, collectionName))
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as T[]
+        setData(items)
+        setIsLoading(false)
+        setError(null)
+      },
+      (err) => {
+        console.error(`Error fetching ${collectionName}:, err`)
+        setError(err as Error)
+        setIsLoading(false)
+      },
+    )
+
+    return () => unsubscribe()
+  }, [collectionName])
+
+  const mutate = (updater: (prev: T[]) => T[]) => {
+    setData(updater)
+  }
+
+  return { data, isLoading, error, mutate }
+}

@@ -20,6 +20,7 @@ interface PropertyCardProps {
     description?: string;
     images?: string[];
     status: string;
+    for: string;
     type: string;
     bedrooms: number;
     bathrooms: number;
@@ -45,7 +46,7 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
           )}
           {/* Status Badge */}
           <span className="absolute top-4 left-4 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
-            For Sale
+            For {property.for || "Sale"}
           </span>
         </div>
 
@@ -53,7 +54,7 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
         <div className="w-full md:w-2/3 p-6 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-start mb-2">
-              <h3 className="text-xl font-semibold text-gray-900 truncate">
+              <h3 className="text-xl font-semibold text-gray-900 whitespace-normal sm:truncate">
                 {property.title}
               </h3>
               <span className="text-xs bg-gray-900/80 text-white px-2 py-0.5 rounded-md">
@@ -67,10 +68,10 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
               />
               {property.location}
             </p>
-            <p className="text-2xl font-bold text-blue-700 mb-2">
+            <p className="text-xl font-bold text-blue-700 mb-2">
               ETB {Number(property.price).toLocaleString("en-US")}
             </p>
-            <p className="text-gray-700 mb-4 line-clamp-2">
+            <p className="text-gray-700 mb-4 line-clamp-4 sm:line-clamp-2">
               {property.description}
             </p>
           </div>
@@ -115,7 +116,7 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
           />
         )}
         <span className="absolute top-4 left-4 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
-          For Sale
+          For {property.for || "Sale"}
         </span>
         <span className="absolute top-4 right-4 bg-gray-900/80 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
           {property.type}
@@ -133,7 +134,7 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
           />
           {property.location}
         </p>
-        <p className="text-2xl font-bold text-blue-700 mb-4">
+        <p className="text-xl font-bold text-blue-700 mb-4">
           ETB {Number(property.price).toLocaleString("en-US")}
         </p>
         <div className="flex justify-between text-gray-500 border-t border-gray-200 pt-4 text-sm">

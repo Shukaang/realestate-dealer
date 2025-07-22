@@ -16,7 +16,7 @@ const testimonials = [
     image: "/michael.jpg",
     stars: 5,
     message:
-      "Working with EstateElite was an absolute pleasure. Their team guided me through every step of purchasing my dream penthouse. Their expertise made the process seamless.",
+      "Working with EthioAddis was an absolute pleasure. Their team guided me through every step of purchasing my dream penthouse. Their expertise made the process seamless.",
   },
   {
     name: "Sarah Johnson",
@@ -24,7 +24,7 @@ const testimonials = [
     image: "/sarah.jpg",
     stars: 5,
     message:
-      "I can't recommend EstateElite enough! They helped me find the perfect beachfront property within my budget. Their market knowledge saved me thousands.",
+      "I can't recommend EthioAddis enough! They helped me find the perfect beachfront property within my budget. Their market knowledge saved me thousands.",
   },
   {
     name: "David Rodriguez",
@@ -32,7 +32,7 @@ const testimonials = [
     image: "/david.jpg",
     stars: 4,
     message:
-      "After months of searching on my own, I turned to EstateElite and found my dream home within weeks. Their approach and understanding made all the difference.",
+      "After months of searching on my own, I turned to EthioAddis and found my dream home within weeks. Their approach and understanding made all the difference.",
   },
 ];
 
@@ -47,7 +47,7 @@ export default function MainTestimonial() {
           </h2>
           <p className="text-gray-700 max-w-3xl mx-auto">
             Don&apos;t just take our word for it—hear from our satisfied clients
-            about their experience working with EstateElite.
+            about their experience working with EthioAddis.
           </p>
         </div>
 

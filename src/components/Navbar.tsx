@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPhoneAlt, faBars, faTimes } from "@fortawesome/free-solid-svg-icons";
-import { cn } from "@/lib/utils"; // Optional utility to combine classes
+import { cn } from "@/lib/utils";
+import NavbarSkeleton from "./user/NavbarSkeleton";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -17,6 +18,20 @@ const navLinks = [
 export default function Header() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    document.fonts.ready.then(() => setIsLoading(false));
+  }, []);
+
+  if (isLoading) {
+    return <NavbarSkeleton />;
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b shadow-sm">
@@ -26,7 +41,7 @@ export default function Header() {
           <Link href="/" className="text-xl font-bold text-blue-700 mr-2">
             EthioAddis
           </Link>
-          <span className="text-gray-500 text-xs font-light hidden sm:block">
+          <span className="text-gray-500 text-xs font-light sm:block">
             Premium Properties
           </span>
         </div>
@@ -64,15 +79,14 @@ export default function Header() {
 
         {/* Mobile Hamburger */}
         <div className="md:hidden">
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="text-gray-700 focus:outline-none"
-          >
-            <FontAwesomeIcon
-              icon={isOpen ? faTimes : faBars}
-              className="text-xl"
-            />
-          </button>
+          {isMounted && (
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="md:hidden text-gray-700"
+            >
+              <FontAwesomeIcon icon={isOpen ? faTimes : faBars} />
+            </button>
+          )}
         </div>
       </div>
 
