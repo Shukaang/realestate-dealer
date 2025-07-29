@@ -1,8 +1,9 @@
+import type React from "react";
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/context/AuthContext";
 import { Inter } from "next/font/google";
-import type { Metadata } from "next";
 import ClientLayout from "@/components/ClientLayout";
 import { Toaster } from "sonner";
 
@@ -19,8 +20,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Real Estate Dealer",
-  description: "Buy, Sell, or Rent with ease",
+  title: "EthioAddis - Real Estate Excellence",
+  description:
+    "Buy, Sell, or Rent properties with Ethiopia's premier real estate company",
 };
 
 export default function RootLayout({

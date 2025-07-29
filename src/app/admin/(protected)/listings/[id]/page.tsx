@@ -22,9 +22,9 @@ import {
   faBed,
   faBath,
   faHouse,
-  faLocation,
-  faMapMarker,
   faMapMarkerAlt,
+  faCheck,
+  faX,
 } from "@fortawesome/free-solid-svg-icons";
 import PageLoader from "@/components/shared/PageLoader";
 
@@ -48,12 +48,30 @@ interface Listing {
   bedrooms: string;
   bathrooms: string;
   type: string;
+  amenities?: string[];
   for: string;
 }
+
+const featureOptions = [
+  "Central Air Conditioning",
+  "Gourmet Kitchen",
+  "Smart Home Technology",
+  "Fitness Center Access",
+  "24/7 Security",
+  "Laundry Room",
+  "Hardwood Flooring",
+  "Private Balcony",
+  "Swimming Pool",
+  "Garage Parking",
+  "High Ceilings",
+];
 
 export default function ListingDetailPage() {
   const { id } = useParams();
   const [listing, setListing] = useState<Listing | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "features">(
+    "overview"
+  );
   const [createdByName, setCreatedByName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,8 +90,6 @@ export default function ListingDetailPage() {
       const listingData = { id: docSnap.id, ...docSnap.data() } as Listing;
 
       setListing(listingData);
-
-      // Fetch admin who created the listing
     };
 
     fetchListing();
@@ -84,7 +100,8 @@ export default function ListingDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-18 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      {/* Meta info row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-2 text-sm text-gray-600">
         <div className="flex items-center gap-2">
           <FontAwesomeIcon icon={faUser} className="text-blue-600 w-4" />
@@ -140,7 +157,7 @@ export default function ListingDetailPage() {
               src={listing.images[0]}
               alt={`Main view of ${listing.title}`}
               fill
-              className="object-cover lg:object-cover sm:object-cover"
+              className="object-cover"
               priority
               sizes="(max-width: 1024px) 100vw, 50vw"
             />
@@ -153,28 +170,27 @@ export default function ListingDetailPage() {
                 src={img}
                 alt={`Gallery image ${i + 1} of ${listing.title}`}
                 fill
-                className="object-cover lg:object-cover sm:object-cover"
+                className="object-cover"
                 sizes="(max-width: 1024px) 50vw, 25vw"
               />
             </div>
           ))}
         </div>
       </div>
-      {/* Listing Header Details */}
-      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center mt-6 mb-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800 dark:text-gray-100">
-            {listing.title}
-          </h1>
 
-          <p className="text-gray-500 mt-1">
-            <span className="text-blue-600 mr-2">
-              <FontAwesomeIcon icon={faMapMarkerAlt} />
-            </span>
+      {/* Listing Header Details */}
+      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">{listing.title}</h1>
+          <p className="text-gray-500 mt-1 flex items-center">
+            <FontAwesomeIcon
+              icon={faMapMarkerAlt}
+              className="text-blue-600 mr-2"
+            />
             {listing.location}
           </p>
         </div>
-        <div className="mt-4 md:mt-0">
+        <div className="bg-blue-50 p-4 rounded-lg min-w-[250px]">
           <p className="text-2xl font-bold text-blue-700">
             ETB {Number(listing.price).toLocaleString("en-US")}
           </p>
@@ -184,70 +200,139 @@ export default function ListingDetailPage() {
             </p>
           ) : (
             <p className="text-sm text-gray-500">
-              Est. {Number(listing.price / 12).toLocaleString("en-US")} / month
+              Est. {Number(listing.price / 12).toLocaleString("en-US")}/month
             </p>
           )}
         </div>
       </div>
 
       {/* Quick Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-700">
-        <div className="border p-4 rounded shadow text-center">
-          <div className="flex items-center justify-center gap-3">
-            <p className="text-blue-600">
-              <FontAwesomeIcon icon={faVectorSquare} />
-            </p>
-            <p className="text-gray-500 mb-1">Area</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <FontAwesomeIcon
+              icon={faVectorSquare}
+              className="text-blue-600 w-4"
+            />
+            <div>
+              <p className="text-gray-500 text-sm">Area</p>
+              <p className="font-semibold">{listing.area} m²</p>
+            </div>
           </div>
-          <p className="font-semibold">{listing.area} m²</p>
         </div>
-        <div className="border p-4 rounded shadow text-center">
-          <div className="flex items-center justify-center gap-3">
-            <p className="text-blue-600">
-              <FontAwesomeIcon icon={faBed} />
-            </p>
-            <p className="text-gray-500 mb-1">Bedrooms</p>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <FontAwesomeIcon icon={faBed} className="text-blue-600 w-4" />
+            <div>
+              <p className="text-gray-500 text-sm">Bedrooms</p>
+              <p className="font-semibold">{listing.bedrooms}</p>
+            </div>
           </div>
-          <p className="font-semibold">{listing.bedrooms}</p>
         </div>
-        <div className="border p-4 rounded shadow text-center">
-          <div className="flex items-center justify-center gap-3">
-            <p className="text-blue-600">
-              <FontAwesomeIcon icon={faBath} />
-            </p>
-            <p className="text-gray-500 mb-1">Bathrooms</p>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <FontAwesomeIcon icon={faBath} className="text-blue-600 w-4" />
+            <div>
+              <p className="text-gray-500 text-sm">Bathrooms</p>
+              <p className="font-semibold">{listing.bathrooms}</p>
+            </div>
           </div>
-          <p className="font-semibold">{listing.bathrooms}</p>
         </div>
-        <div className="border p-4 rounded shadow text-center">
-          <div className="flex items-center justify-center gap-3">
-            <p className="text-blue-600">
-              <FontAwesomeIcon icon={faHouse} />
-            </p>
-            <p className="text-gray-500 mb-1">Type</p>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <div className="flex items-center gap-3">
+            <FontAwesomeIcon icon={faHouse} className="text-blue-600 w-4" />
+            <div>
+              <p className="text-gray-500 text-sm">Type</p>
+              <p className="font-semibold capitalize">{listing.type}</p>
+            </div>
           </div>
-          <p className="font-semibold capitalize">{listing.type}</p>
         </div>
       </div>
 
-      {/* Overview + Description */}
-      <div className="mt-6 flex flex-col lg:flex-row lg:items-start gap-6">
-        {/* Overview (2/3) */}
-        <div className="lg:w-2/3 rounded-lg p-6 shadow-sm space-y-4">
-          <h2 className="text-xl font-semibold text-blue-700">Full Overview</h2>
-          <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-            {listing.overview || "No overview provided."}
-          </p>
+      {/* Main Content Area */}
+      <div className="flex flex-col lg:flex-row gap-8 mt-6">
+        {/* Left Column - Tabs Content */}
+        <div className="lg:w-2/3 p-4 rounded-lg shadow-sm border border-gray-100">
+          {/* Tabs Navigation */}
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8">
+              <button
+                onClick={() => setActiveTab("overview")}
+                className={`py-3 px-1 font-medium text-sm border-b-2 transition-colors ${
+                  activeTab === "overview"
+                    ? "border-blue-600 text-blue-700"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab("features")}
+                className={`py-3 px-1 font-medium text-sm border-b-2 transition-colors ${
+                  activeTab === "features"
+                    ? "border-blue-600 text-blue-700"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Features & Amenities
+              </button>
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          <div className="py-6">
+            {activeTab === "overview" ? (
+              <div className="prose max-w-none">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                  Property Overview
+                </h3>
+                <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+                  {listing.overview || "No overview provided."}
+                </p>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                  Features & Amenities
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {featureOptions.map((feature) => (
+                    <div
+                      key={feature}
+                      className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg"
+                    >
+                      {listing.amenities?.includes(feature) ? (
+                        <FontAwesomeIcon
+                          icon={faCheck}
+                          className="text-green-500 w-4 h-4"
+                        />
+                      ) : (
+                        <FontAwesomeIcon
+                          icon={faX}
+                          className="text-red-400 w-4 h-4"
+                        />
+                      )}
+                      <span className="text-gray-700">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Description (1/3) */}
-        <div className="lg:w-1/3 rounded-lg p-6 shadow-sm space-y-4">
-          <h2 className="text-xl font-semibold text-blue-700">
-            Property Description
-          </h2>
-          <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-            {listing.description || "No description provided."}
-          </p>
+        {/* Right Column - Description */}
+        <div className="lg:w-1/3">
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Property Description
+            </h2>
+            <div className="prose prose-sm text-gray-600">
+              <p className="whitespace-pre-line leading-relaxed">
+                {listing.description || "No description provided."}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

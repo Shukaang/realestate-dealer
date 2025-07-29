@@ -12,12 +12,16 @@ import {
   doc,
   getDoc,
   Timestamp,
+  query,
+  where,
 } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "@/lib/context/AuthContext";
+import { Unauthorized } from "@/components/Unauthorized";
 
 const featureOptions = [
   "Central Air Conditioning",
@@ -43,6 +47,26 @@ export default function CreateListing() {
   }
 
   const router = useRouter();
+  const { hasPermission, loading: authLoading, user, role } = useAuth();
+
+  // Check permission first
+  if (authLoading) {
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+          <div className="h-20 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasPermission("upload-content")) {
+    return <Unauthorized />;
+  }
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -60,6 +84,7 @@ export default function CreateListing() {
   const [mainImage, setMainImage] = useState<File | null>(null);
   const [detailImages, setDetailImages] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [adminName, setAdminName] = useState("");
   const [creator, setCreator] = useState({
     uid: "",
     name: "",
@@ -90,6 +115,21 @@ export default function CreateListing() {
             name: `${matchedAdmin.firstName} ${matchedAdmin.lastName}`,
             email: user.email,
           });
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [adminsData]);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && adminsData.length > 0) {
+        const matchedAdmin = (adminsData as Admin[]).find(
+          (admin) => admin.email === user.email
+        );
+        if (matchedAdmin) {
+          setAdminName(`${matchedAdmin.firstName} ${matchedAdmin.lastName}`);
         }
       }
     });
@@ -220,22 +260,24 @@ export default function CreateListing() {
   };
 
   return (
-    <div>
-      <Button
-        variant="outline"
-        onClick={() => router.push("/admin/listings")}
-        className="mb-5"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Listings
-      </Button>
+    <div className="pb-10 pt-15 dark:bg-slate-800">
       <form
         onSubmit={handleSubmit}
         className="max-w-3xl mx-auto p-6 bg-white dark:bg-gray-900 rounded-2xl shadow space-y-6"
       >
-        <h2 className="text-3xl font-bold text-blue-800 mb-4">
-          Create New Listing
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold text-blue-800 mb-4">
+            Create New Listing
+          </h2>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/admin/listings")}
+            className="mb-5"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Listings
+          </Button>
+        </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <input
@@ -459,6 +501,20 @@ export default function CreateListing() {
         >
           {uploading ? "Uploading..." : "Submit Listing"}
         </Button>
+        <div className="sm:flex justify-between items-center hidden">
+          <p className="text-gray-500 font-semibold text-sm">
+            creating as:{" "}
+            <span className="text-blue-500 px-3 py-1 border border-blue-500 bg-blue-50 dark:bg-blue-100 rounded-full">
+              {adminName}
+            </span>
+          </p>
+          <p className="">
+            Role:{" "}
+            <span className="font-semibold text-sm capitalize text-red-500 px-2 py-1 border border-red-100 rounded-full bg-red-50 dark:bg-red-100">
+              {role}
+            </span>
+          </p>
+        </div>
       </form>
     </div>
   );

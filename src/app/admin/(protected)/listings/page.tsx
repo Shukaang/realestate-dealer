@@ -70,7 +70,9 @@ interface DeleteDialogProps {
 }
 
 // Role Verification Function
-async function verifyAdminRole(requiredRole: "admin" | "super-admin") {
+async function verifyAdminRole(
+  requiredRole: "viewer" | "moderator" | "admin" | "super-admin"
+) {
   const user = auth.currentUser;
   if (!user) return false;
 
@@ -289,7 +291,7 @@ export default function AdminListingsPage() {
     title: string,
     images?: string[]
   ) => {
-    const canDelete = await verifyAdminRole("admin");
+    const canDelete = await verifyAdminRole("super-admin");
     if (!canDelete) {
       toast.error("You don't have permission to delete listings");
       return;
@@ -331,7 +333,7 @@ export default function AdminListingsPage() {
   ) => {
     if (isUpdating) return;
 
-    const canUpdate = await verifyAdminRole("admin");
+    const canUpdate = (await verifyAdminRole("moderator")) || "admin";
     if (!canUpdate) {
       toast.error("You don't have permission to update listings");
       return;
@@ -495,7 +497,7 @@ export default function AdminListingsPage() {
 
   // Rest of your UI remains exactly the same
   return (
-    <div className="p-6 md:p-10 bg-white dark:bg-slate-800 min-h-screen">
+    <div className="p-3 sm:p-6 md:p-10 bg-white dark:bg-slate-800 min-h-screen">
       <DeleteDialog
         isOpen={!!listingToDelete}
         onClose={() => setListingToDelete(null)}
@@ -504,21 +506,30 @@ export default function AdminListingsPage() {
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between sm:mb-8">
+        <div className="flex items-center gap-1 sm:gap-3">
           <FontAwesomeIcon icon={faHouse} className="text-blue-600 text-3xl" />
-          <h1 className="text-3xl font-bold">All Listings</h1>
-          <Badge variant="blue" className="text-lg font-bold px-3 py-1">
+          <h1 className="text-xl sm:text-3xl font-bold">All Listings</h1>
+          <Badge
+            variant="blue"
+            className="text-sm hidden sm:block sm:text-lg font-bold px-3 py-1"
+          >
             {allListings.length}
           </Badge>
         </div>
         <Link href="/admin/upload">
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" />
+          <Button className="gap-0.5 sm:gap-2">
+            <Plus className="w-2 h-2 sm:w-4 sm:h-4" />
             Add New Listing
           </Button>
         </Link>
       </div>
+      <Badge
+        variant="blue"
+        className="text-sm block sm:hidden font-bold px-3 py-1 my-2"
+      >
+        {allListings.length} Listings
+      </Badge>
 
       {/* Filters */}
       <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-6 mb-6 space-y-4">

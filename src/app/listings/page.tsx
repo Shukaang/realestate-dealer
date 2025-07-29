@@ -5,8 +5,9 @@ import { useFirestoreCollection } from "@/lib/useFirestoreDoc";
 import PropertyCard from "@/components/user/PropertyCard";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faList, faThLarge } from "@fortawesome/free-solid-svg-icons";
+import { faHome, faList, faThLarge } from "@fortawesome/free-solid-svg-icons";
 import PageLoader from "@/components/shared/PageLoader";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface Listing {
   id: string;
@@ -28,12 +29,104 @@ interface Listing {
 export default function ListingsPage() {
   const { data: listings = [], isLoading } =
     useFirestoreCollection<Listing>("listings");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
-  const [selectedType, setSelectedType] = useState("");
-  const [selectedPrice, setSelectedPrice] = useState("");
+
+  // Initialize filters from URL parameters
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("search") || ""
+  );
+  const [selectedCity, setSelectedCity] = useState(
+    searchParams.get("city") || ""
+  );
+  const [selectedType, setSelectedType] = useState(
+    searchParams.get("type") || ""
+  );
+  const [selectedPrice, setSelectedPrice] = useState(
+    searchParams.get("price") || ""
+  );
   const [view, setView] = useState<"grid" | "list">("grid");
+
+  // Function to update URL with current filter state
+  const updateURL = (filters: {
+    search?: string;
+    city?: string;
+    type?: string;
+    price?: string;
+  }) => {
+    const params = new URLSearchParams();
+
+    // Add non-empty parameters
+    if (filters.search) params.set("search", filters.search);
+    if (filters.city) params.set("city", filters.city);
+    if (filters.type) params.set("type", filters.type);
+    if (filters.price) params.set("price", filters.price);
+
+    // Update URL without page reload
+    const newUrl = params.toString()
+      ? `/listings?${params.toString()}`
+      : "/listings";
+    router.push(newUrl, { scroll: false });
+  };
+
+  // Handle search input change
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    updateURL({
+      search: value,
+      city: selectedCity,
+      type: selectedType,
+      price: selectedPrice,
+    });
+  };
+
+  // Handle city filter change
+  const handleCityChange = (value: string) => {
+    setSelectedCity(value);
+    updateURL({
+      search: searchQuery,
+      city: value,
+      type: selectedType,
+      price: selectedPrice,
+    });
+  };
+
+  // Handle type filter change
+  const handleTypeChange = (value: string) => {
+    setSelectedType(value);
+    updateURL({
+      search: searchQuery,
+      city: selectedCity,
+      type: value,
+      price: selectedPrice,
+    });
+  };
+
+  // Handle price filter change
+  const handlePriceChange = (value: string) => {
+    setSelectedPrice(value);
+    updateURL({
+      search: searchQuery,
+      city: selectedCity,
+      type: selectedType,
+      price: value,
+    });
+  };
+
+  // Initialize filters from URL on component mount
+  useEffect(() => {
+    const urlSearch = searchParams.get("search") || "";
+    const urlCity = searchParams.get("city") || "";
+    const urlType = searchParams.get("type") || "";
+    const urlPrice = searchParams.get("price") || "";
+
+    setSearchQuery(urlSearch);
+    setSelectedCity(urlCity);
+    setSelectedType(urlType);
+    setSelectedPrice(urlPrice);
+  }, [searchParams]);
 
   // STEP 1: Filter the listings (exclude sold/pending)
   const filteredListings = listings
@@ -103,7 +196,7 @@ export default function ListingsPage() {
   if (isLoading) return <PageLoader />;
 
   return (
-    <div className="pb-12">
+    <div className="pb-16">
       {/* Hero Section */}
       <section className="relative mx-5 h-[350px] flex items-center justify-center bg-black text-gray-50">
         <Image
@@ -119,18 +212,19 @@ export default function ListingsPage() {
           </p>
         </div>
       </section>
+
       {/* Filters Section */}
-      <section className="bg-white shadow sticky top-15 z-40 py-4">
+      <section className="bg-white shadow sm:sticky sm:top-15 sm:z-40 py-4">
         <div className="container mx-auto px-4 flex flex-wrap gap-4 justify-between items-center">
           <input
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by title or location..."
             className="border px-3 py-2 rounded-md w-full md:w-1/4"
           />
           <select
             value={selectedCity}
-            onChange={(e) => setSelectedCity(e.target.value)}
+            onChange={(e) => handleCityChange(e.target.value)}
             className="border px-3 py-2 text-sm rounded-md"
           >
             <option value="">All Cities</option>
@@ -143,7 +237,7 @@ export default function ListingsPage() {
           </select>
           <select
             value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
+            onChange={(e) => handleTypeChange(e.target.value)}
             className="border px-3 py-2 text-sm rounded-md"
           >
             <option value="">All Types</option>
@@ -153,7 +247,7 @@ export default function ListingsPage() {
           </select>
           <select
             value={selectedPrice}
-            onChange={(e) => setSelectedPrice(e.target.value)}
+            onChange={(e) => handlePriceChange(e.target.value)}
             className="border px-3 py-2 text-sm rounded-md"
           >
             <option value="">All Prices</option>
@@ -165,7 +259,7 @@ export default function ListingsPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setView("grid")}
-              className={`px-3 py-2 rounded ${
+              className={`px-2 py-1 rounded ${
                 view === "grid"
                   ? "bg-blue-700 text-white"
                   : "bg-gray-100 text-gray-700"
@@ -175,7 +269,7 @@ export default function ListingsPage() {
             </button>
             <button
               onClick={() => setView("list")}
-              className={`px-3 py-2 rounded ${
+              className={`hidden sm:block px-2 py-1 rounded ${
                 view === "list"
                   ? "bg-blue-700 text-white"
                   : "bg-gray-100 text-gray-700"
@@ -189,10 +283,60 @@ export default function ListingsPage() {
 
       {/* Results Section */}
       <section className="container mx-auto px-4 py-10">
-        {/* Results Header */}
+        {/* Pagination Section */}
+        {totalPages > 1 && (
+          <div className="container mx-auto px-4">
+            <div className="flex justify-center items-center space-x-2">
+              {/* Previous Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
+                  currentPage === 1
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                }`}
+              >
+                Previous
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex space-x-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (pageNumber) => (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
+                        pageNumber === currentPage
+                          ? "bg-blue-700 text-white shadow-md"
+                          : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  )
+                )}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
+                  currentPage === totalPages
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h3 className="text-gray-600 text-lg">
+            <h3 className="text-gray-600 text-lg hidden sm:block">
               Showing {totalListings === 0 ? 0 : startIndex + 1}-
               {Math.min(endIndex, totalListings)} of {totalListings} Properties
             </h3>
@@ -208,7 +352,9 @@ export default function ListingsPage() {
         {/* Listings Display */}
         {totalListings === 0 ? (
           <div className="text-center py-16">
-            <div className="text-gray-400 text-6xl mb-4">🏠</div>
+            <div className="text-blue-700 text-6xl mb-4">
+              <FontAwesomeIcon icon={faHome} />
+            </div>
             <h3 className="text-xl font-semibold text-gray-600 mb-2">
               No Properties Found
             </h3>
@@ -246,7 +392,7 @@ export default function ListingsPage() {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
                 currentPage === 1
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
@@ -262,7 +408,7 @@ export default function ListingsPage() {
                   <button
                     key={pageNumber}
                     onClick={() => handlePageChange(pageNumber)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
                       pageNumber === currentPage
                         ? "bg-blue-700 text-white shadow-md"
                         : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
@@ -278,7 +424,7 @@ export default function ListingsPage() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
                 currentPage === totalPages
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
@@ -289,7 +435,7 @@ export default function ListingsPage() {
           </div>
 
           {/* Page Info */}
-          <div className="text-center mt-4 text-sm text-gray-500">
+          <div className="text-center mt-4 text-sm text-gray-500 animate-on-scroll delay-200">
             Page {currentPage} of {totalPages} • {totalListings} total
             properties
           </div>

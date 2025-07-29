@@ -34,19 +34,27 @@ const testimonials = [
     message:
       "After months of searching on my own, I turned to EthioAddis and found my dream home within weeks. Their approach and understanding made all the difference.",
   },
+  {
+    name: "Shueb Ahmed",
+    location: "Addis Ababa, ET",
+    image: "/my-profilePic.jpg",
+    stars: 5,
+    message:
+      "After months of searching on my own, I turned to EthioAddis and found my dream home within weeks. Their approach and understanding made all the difference.",
+  },
 ];
 
 export default function MainTestimonial() {
   return (
-    <section className="mb-0">
+    <section className="mb-0 animate-on-scroll animate-pc-only delay-100">
       <div className="container px-4">
         {/* Heading */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 animate-on-scroll animate-mobile-only delay-100">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             What Our Clients Say
           </h2>
           <p className="text-gray-700 max-w-3xl mx-auto">
-            Don&apos;t just take our word for it—hear from our satisfied clients
+            Don't just take our word for it—hear from our satisfied clients
             about their experience working with EthioAddis.
           </p>
         </div>
@@ -57,7 +65,7 @@ export default function MainTestimonial() {
           spaceBetween={30}
           slidesPerView={3}
           loop={true}
-          autoplay={{ delay: 4500 }}
+          autoplay={{ delay: 5000, disableOnInteraction: false }}
           pagination={{ clickable: true }}
           navigation
           breakpoints={{
@@ -65,6 +73,7 @@ export default function MainTestimonial() {
             768: { slidesPerView: 2 },
             1024: { slidesPerView: 3 },
           }}
+          className="testimonials-swiper"
         >
           {testimonials.map((t, index) => (
             <SwiperSlide key={index} className="h-full">

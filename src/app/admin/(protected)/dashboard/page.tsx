@@ -39,17 +39,17 @@ ChartJS.register(
 const Dashboard = () => {
   const {
     data: listings = [],
-    loading: listingsLoading,
+    isLoading: listingsLoading,
     error: listingsError,
   } = useFirestoreCollection<any>("listings");
   const {
     data: appointments = [],
-    loading: appointmentsLoading,
+    isLoading: appointmentsLoading,
     error: appointmentsError,
   } = useFirestoreCollection<any>("appointments");
   const {
     data: messages = [],
-    loading: messagesLoading,
+    isLoading: messagesLoading,
     error: messagesError,
   } = useFirestoreCollection<any>("userMessages");
 

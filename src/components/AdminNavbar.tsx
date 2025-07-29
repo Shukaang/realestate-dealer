@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth, getIdToken } from "@/lib/context/AuthContext";
+import { useAuth } from "@/lib/context/AuthContext";
 import { logout } from "@/lib/firebase";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useFirestoreCollection } from "@/lib/useFirestoreDoc";

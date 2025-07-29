@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useFirestoreCollection } from "@/lib/useFirestoreDoc";
@@ -56,63 +57,253 @@ const featureOptions = [
 export default function ListingDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const numericId = parseInt(id as string);
+  const numericId = Number.parseInt(id as string);
   const [activeTab, setActiveTab] = useState<"overview" | "features">(
     "overview"
   );
+  const [similarListings, setSimilarListings] = useState<Listing[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [searchStrategy, setSearchStrategy] = useState<
+    "exact" | "city" | "country" | "latest"
+  >("");
 
-  // 1. Fetch ALL listings (using your exact hook)
+  // Fetch all listings
   const { data: allListings = [], isLoading } =
     useFirestoreCollection<Listing>("listings");
 
-  // 2. Find our specific listing
+  // Find current listing
   const listing = allListings.find((l) => l.numericId === numericId);
 
-  // 3. Get similar listings
-  const [similarListings, setSimilarListings] = useState<Listing[]>([]);
-  const [loadingSimilar, setLoadingSimilar] = useState(false);
+  // Enhanced location parsing function
+  const parseLocation = (location: string) => {
+    if (!location) return { exact: "", city: "", country: "", parts: [] };
 
+    const cleaned = location.toLowerCase().trim();
+    const parts = cleaned.split(",").map((part) => part.trim());
+
+    // For locations like "Bole, Addis Ababa, Ethiopia"
+    if (parts.length >= 3) {
+      return {
+        exact: cleaned, // "bole, addis ababa, ethiopia"
+        city: parts[1], // "addis ababa"
+        country: parts[2], // "ethiopia"
+        parts: parts,
+      };
+    }
+    // For locations like "Hawassa, Ethiopia"
+    else if (parts.length === 2) {
+      return {
+        exact: cleaned, // "hawassa, ethiopia"
+        city: parts[0], // "hawassa"
+        country: parts[1], // "ethiopia"
+        parts: parts,
+      };
+    }
+    // For single location like "Addis Ababa"
+    else {
+      return {
+        exact: cleaned, // "addis ababa"
+        city: cleaned, // "addis ababa"
+        country: "",
+        parts: parts,
+      };
+    }
+  };
+
+  // Enhanced similar listings finder with hierarchical matching
   useEffect(() => {
-    if (listing) {
+    if (listing && allListings.length > 0) {
       setLoadingSimilar(true);
-      const getSimilar = async () => {
+
+      const findSimilarListings = () => {
         try {
-          const cityTarget = "addis ababa";
-          const similar = allListings
-            .filter(
-              (l) =>
-                l.location.toLowerCase().includes(cityTarget) &&
-                l.numericId !== numericId &&
-                l.status === "available"
-            )
-            .sort((a, b) => b.numericId - a.numericId)
-            .slice(0, 4);
-          setSimilarListings(similar);
+          const currentLocationInfo = parseLocation(listing.location);
+
+          // Filter available listings (exclude current listing)
+          const availableListings = allListings.filter(
+            (l) =>
+              l.numericId !== numericId &&
+              l.status === "available" &&
+              l.location
+          );
+
+          let finalSimilarListings: Listing[] = [];
+          let strategy = "";
+
+          // STEP 1: Try exact location match first
+          const exactMatches = availableListings.filter((l) => {
+            const listingLocationInfo = parseLocation(l.location);
+            return listingLocationInfo.exact === currentLocationInfo.exact;
+          });
+
+          if (exactMatches.length >= 4) {
+            // We have enough exact matches
+            finalSimilarListings = exactMatches.slice(0, 4);
+            strategy = "exact";
+          } else {
+            // Add exact matches to our results
+            finalSimilarListings = [...exactMatches];
+
+            // STEP 2: Try city-level matches (same city, different area)
+            if (currentLocationInfo.city && finalSimilarListings.length < 4) {
+              const cityMatches = availableListings.filter((l) => {
+                const listingLocationInfo = parseLocation(l.location);
+                // Same city but different exact location
+                return (
+                  listingLocationInfo.city === currentLocationInfo.city &&
+                  listingLocationInfo.exact !== currentLocationInfo.exact &&
+                  !finalSimilarListings.some((existing) => existing.id === l.id)
+                );
+              });
+
+              const neededFromCity = 4 - finalSimilarListings.length;
+              finalSimilarListings = [
+                ...finalSimilarListings,
+                ...cityMatches.slice(0, neededFromCity),
+              ];
+
+              if (exactMatches.length > 0 && cityMatches.length > 0) {
+                strategy = "exact+city";
+              } else if (cityMatches.length > 0) {
+                strategy = "city";
+              }
+            }
+
+            // STEP 3: Try country-level matches (same country, different city)
+            if (
+              currentLocationInfo.country &&
+              finalSimilarListings.length < 4
+            ) {
+              const countryMatches = availableListings.filter((l) => {
+                const listingLocationInfo = parseLocation(l.location);
+                // Same country but different city
+                return (
+                  listingLocationInfo.country === currentLocationInfo.country &&
+                  listingLocationInfo.city !== currentLocationInfo.city &&
+                  !finalSimilarListings.some((existing) => existing.id === l.id)
+                );
+              });
+
+              const neededFromCountry = 4 - finalSimilarListings.length;
+              finalSimilarListings = [
+                ...finalSimilarListings,
+                ...countryMatches.slice(0, neededFromCountry),
+              ];
+
+              if (strategy && countryMatches.length > 0) {
+                strategy = strategy + "+country";
+              } else if (countryMatches.length > 0) {
+                strategy = "country";
+              }
+            }
+
+            // STEP 4: Fallback to latest listings if still not enough
+            if (finalSimilarListings.length < 4) {
+              const latestListings = availableListings
+                .filter(
+                  (l) =>
+                    !finalSimilarListings.some(
+                      (existing) => existing.id === l.id
+                    )
+                )
+                .sort((a, b) => {
+                  const dateA = a.createdAt?.toDate?.() || new Date(0);
+                  const dateB = b.createdAt?.toDate?.() || new Date(0);
+                  return dateB.getTime() - dateA.getTime();
+                });
+
+              const neededFromLatest = 4 - finalSimilarListings.length;
+              finalSimilarListings = [
+                ...finalSimilarListings,
+                ...latestListings.slice(0, neededFromLatest),
+              ];
+
+              if (strategy) {
+                strategy = strategy + "+latest";
+              } else {
+                strategy = "latest";
+              }
+            }
+          }
+
+          // Sort final results by relevance (exact matches first, then by creation date)
+          finalSimilarListings = finalSimilarListings.sort((a, b) => {
+            const aLocationInfo = parseLocation(a.location);
+            const bLocationInfo = parseLocation(b.location);
+
+            // Exact location matches first
+            if (
+              aLocationInfo.exact === currentLocationInfo.exact &&
+              bLocationInfo.exact !== currentLocationInfo.exact
+            ) {
+              return -1;
+            }
+            if (
+              bLocationInfo.exact === currentLocationInfo.exact &&
+              aLocationInfo.exact !== currentLocationInfo.exact
+            ) {
+              return 1;
+            }
+
+            // Then city matches
+            if (
+              aLocationInfo.city === currentLocationInfo.city &&
+              bLocationInfo.city !== currentLocationInfo.city
+            ) {
+              return -1;
+            }
+            if (
+              bLocationInfo.city === currentLocationInfo.city &&
+              aLocationInfo.city !== currentLocationInfo.city
+            ) {
+              return 1;
+            }
+
+            // Finally by creation date (newest first)
+            const dateA = a.createdAt?.toDate?.() || new Date(0);
+            const dateB = b.createdAt?.toDate?.() || new Date(0);
+            return dateB.getTime() - dateA.getTime();
+          });
+
+          finalSimilarListings.forEach((listing, i) => {
+            const locationInfo = parseLocation(listing.location);
+          });
+
+          setSimilarListings(finalSimilarListings);
+          setSearchStrategy(strategy as any);
         } catch (error) {
-          console.error("Error finding similar listings:", error);
+          console.error("❌ Error finding similar listings:", error);
+          // Fallback to latest listings on error
+          const availableListings = allListings.filter(
+            (l) =>
+              l.numericId !== numericId &&
+              l.status === "available" &&
+              l.location
+          );
+          const latestListings = availableListings
+            .sort((a, b) => {
+              const dateA = a.createdAt?.toDate?.() || new Date(0);
+              const dateB = b.createdAt?.toDate?.() || new Date(0);
+              return dateB.getTime() - dateA.getTime();
+            })
+            .slice(0, 4);
+
+          setSimilarListings(latestListings);
+          setSearchStrategy("latest");
         } finally {
           setLoadingSimilar(false);
         }
       };
-      getSimilar();
+
+      // Add a small delay to ensure all data is loaded
+      const timer = setTimeout(findSimilarListings, 100);
+      return () => clearTimeout(timer);
     }
   }, [listing, allListings, numericId]);
 
-  // Helper functions (unchanged)
-  const getSearchTerms = (location?: string) => {
-    if (!location) return [];
-    const parts = location
-      .toLowerCase()
-      .replace(/[^a-z ]/g, "")
-      .split(" ");
-    return parts.length > 1
-      ? [`${parts[0]} ${parts[1]}, parts[0], parts[1]`]
-      : [parts[0]];
-  };
-
   const year = listing?.createdAt?.toDate?.()?.getFullYear?.() || "N/A";
 
-  // Loading and error states (unchanged)
+  // Loading and error states
   if (isLoading) {
     return <PageLoader />;
   }
@@ -130,6 +321,8 @@ export default function ListingDetailPage() {
       </div>
     );
   }
+
+  const currentLocationInfo = parseLocation(listing.location);
 
   return (
     <div className="max-w-7xl bg-gray-50 mx-auto px-4 py-18 space-y-8">
@@ -151,13 +344,12 @@ export default function ListingDetailPage() {
         <FontAwesomeIcon icon={faChevronRight} className="w-2" />
         <span className="text-blue-700 font-normal">{listing.title}</span>
       </nav>
-
       {/* Property Gallery */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[500px]">
         <div className="relative rounded-xl overflow-hidden h-full">
           {listing.images?.[0] && (
             <Image
-              src={listing.images[0]}
+              src={listing.images[0] || "/placeholder.svg"}
               alt={`Main view of ${listing.title}`}
               fill
               className="object-cover"
@@ -170,7 +362,7 @@ export default function ListingDetailPage() {
           {listing.images?.slice(1, 5).map((img, i) => (
             <div key={i} className="relative rounded-xl overflow-hidden">
               <Image
-                src={img}
+                src={img || "/placeholder.svg"}
                 alt={`Gallery image ${i + 1} of ${listing.title}`}
                 fill
                 className="object-cover"
@@ -264,7 +456,6 @@ export default function ListingDetailPage() {
                 </div>
               </div>
             </div>
-
             {/* Tabs */}
             <div className="border-b border-gray-200">
               <div className="flex space-x-8">
@@ -324,7 +515,10 @@ export default function ListingDetailPage() {
 
           {/* Similar Properties */}
           <div className="mt-8 bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-            <h3 className="text-xl font-bold mb-4">Similar Properties</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Similar Properties</h3>
+            </div>
+
             {loadingSimilar ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[...Array(4)].map((_, i) => (
@@ -334,69 +528,97 @@ export default function ListingDetailPage() {
                   >
                     <div className="w-1/3 h-32 bg-gray-200 animate-pulse"></div>
                     <div className="p-4 space-y-2 w-2/3">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                      <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : similarListings.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {similarListings.map((property) => (
-                  <div
-                    key={property.id}
-                    className="border rounded-lg overflow-hidden flex transition-shadow cursor-pointer"
-                    onClick={() =>
-                      router.push(`/listings/${property.numericId}`)
-                    }
-                  >
-                    {/* Left: Image */}
-                    <div className="relative w-1/3 h-30 bg-gray-100">
-                      {property.images?.[0] ? (
-                        <Image
-                          src={property.images[0]}
-                          alt={property.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 100vw, 33vw"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                          <span>No Image</span>
-                        </div>
-                      )}
-                    </div>
+                {similarListings.map((property) => {
+                  const propertyLocationInfo = parseLocation(property.location);
+                  const isExactMatch =
+                    propertyLocationInfo.exact === currentLocationInfo.exact;
+                  const isCityMatch =
+                    propertyLocationInfo.city === currentLocationInfo.city;
+                  const isCountryMatch =
+                    propertyLocationInfo.country ===
+                    currentLocationInfo.country;
 
-                    {/* Right: Info */}
-                    <div className="w-2/3 p-4 space-y-1">
-                      <h4 className="font-semibold text-base text-gray-800 truncate">
-                        {property.title}
-                      </h4>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <FontAwesomeIcon
-                          icon={faMapMarkerAlt}
-                          className="w-3 h-3 mr-1 text-blue-700"
-                        />
-                        <span className="truncate">{property.location}</span>
+                  return (
+                    <div
+                      key={property.id}
+                      className="border rounded-lg overflow-hidden flex transition-all duration-200 cursor-pointer hover:border-blue-700"
+                      onClick={() =>
+                        router.push(`/listings/${property.numericId}`)
+                      }
+                    >
+                      {/* Left: Image */}
+                      <div className="relative w-1/3 h-32 bg-gray-100">
+                        {property.images?.[0] ? (
+                          <Image
+                            src={property.images[0] || "/Big Home1.jpg"}
+                            alt={property.title}
+                            fill
+                            className="object-cover h-full w-full"
+                            sizes="(max-width: 640px) 100vw, 33vw"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                            <span className="text-xs">No Image</span>
+                          </div>
+                        )}
                       </div>
-                      <p className="font-bold text-blue-700 text-sm">
-                        ETB{" "}
-                        {Number(property.price).toLocaleString(undefined, {
-                          maximumFractionDigits: 0,
-                        })}
-                      </p>
+                      {/* Right: Info */}
+                      <div className="w-2/3 p-4 space-y-1">
+                        <h4 className="font-semibold text-base text-gray-800 line-clamp-2 leading-tight">
+                          {property.title}
+                        </h4>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <FontAwesomeIcon
+                            icon={faMapMarkerAlt}
+                            className="w-3 h-3 mr-1 text-blue-700 flex-shrink-0"
+                          />
+                          <span className="truncate">{property.location}</span>
+                        </div>
+                        <div>
+                          {property.for === "Rent" ? (
+                            <p className="font-bold text-blue-700 text-sm">
+                              ETB{" "}
+                              {Number(property.price).toLocaleString(
+                                undefined,
+                                {
+                                  maximumFractionDigits: 0,
+                                }
+                              )}{" "}
+                              <span className="text-gray-500 text-xs font-normal">
+                                /month
+                              </span>
+                            </p>
+                          ) : (
+                            <p className="font-bold text-blue-700 text-sm">
+                              ETB{" "}
+                              {Number(property.price).toLocaleString(
+                                undefined,
+                                {
+                                  maximumFractionDigits: 0,
+                                }
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <p className="text-gray-600">
                   No similar properties found for{" "}
                   <span className="font-medium">{listing?.location}</span>
-                </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Searched for: {getSearchTerms(listing?.location).join(", ")}
                 </p>
               </div>
             )}
@@ -446,6 +668,7 @@ export default function ListingDetailPage() {
               Contact Agent
             </Button>
           </div>
+
           {/* Appointment Form */}
           <AppointmentForm
             listingTitle={listing.title}

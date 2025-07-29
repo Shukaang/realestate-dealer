@@ -206,10 +206,10 @@ export default function AdminManagementPage() {
   }
 
   return (
-    <div className="container mx-auto px-5 py-8 space-y-8">
+    <div className="container bg-white dark:bg-slate-800 mx-auto px-5 py-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Admin Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Admin Management</h1>
           <p className="text-muted-foreground">
             Manage admin users and their permissions
           </p>
@@ -229,7 +229,7 @@ export default function AdminManagementPage() {
           const count = roleStats[roleKey as AdminRole] || 0;
           const Icon = config.icon;
           return (
-            <Card key={roleKey}>
+            <Card key={roleKey} className="dark:bg-slate-900">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   {config.label}s
@@ -245,7 +245,7 @@ export default function AdminManagementPage() {
       </div>
 
       {/* Admin Table */}
-      <Card>
+      <Card className="dark:bg-slate-900">
         <CardHeader>
           <CardTitle>Admin Users</CardTitle>
           <CardDescription>
@@ -274,20 +274,23 @@ export default function AdminManagementPage() {
                   const isCurrentUser = admin.id === user?.uid;
 
                   return (
-                    <TableRow key={admin.id}>
+                    <TableRow
+                      key={admin.id}
+                      className="dark:hover:bg-slate-800"
+                    >
                       <TableCell className="font-medium">
                         {admin.firstName} {admin.lastName}
                         {isCurrentUser && (
                           <Badge
                             variant="outline"
-                            className="ml-2 text-xs bg-green-200 dark:bg-slate-950"
+                            className="ml-2 text-xs bg-green-200 dark:bg-slate-800"
                           >
                             You
                           </Badge>
                         )}
-                        <td className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500">
                           By: {admin.createdBy}
-                        </td>
+                        </p>
                       </TableCell>
 
                       <TableCell>{admin.email}</TableCell>
@@ -333,7 +336,7 @@ export default function AdminManagementPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-destructive hover:text-destructive p-2 bg-red-100 hover:bg-red-200 dark:bg-red-100 dark:hover:bg-red-200"
+                                className="text-destructive hover:text-destructive p-2 bg-red-50 hover:bg-red-100 dark:bg-red-100 dark:hover:bg-red-200"
                                 onClick={() => setDeletingAdmin(admin)}
                               >
                                 <Trash2 className="h-4 w-4" />

@@ -204,8 +204,8 @@ export default function AppointmentForm({
 
       <Button
         onClick={handleSubmit}
-        className="w-full bg-blue-700 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={loading}
+        className="w-full bg-blue-700 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? "Submitting..." : "Submit Request"}
       </Button>

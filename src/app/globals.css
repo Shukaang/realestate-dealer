@@ -75,7 +75,7 @@
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: var(--sidebar-ring);
 }
 
 .dark {
@@ -116,18 +116,15 @@
   html {
     @apply overflow-x-hidden;
   }
-
   body {
     @apply bg-background text-foreground;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-
   html::-webkit-scrollbar,
   body::-webkit-scrollbar {
     display: none;
   }
-
   * {
     @apply border-border outline-ring/50;
   }
@@ -139,8 +136,12 @@ header {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Pulse animation for skeleton */
@@ -149,6 +150,194 @@ header {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Testimonials Swiper Styles */
+.testimonials-swiper .swiper-pagination-bullet {
+  @apply bg-blue-300 opacity-50;
+}
+
+.testimonials-swiper .swiper-pagination-bullet-active {
+  @apply bg-blue-700 opacity-100;
+}
+
+.testimonials-swiper .swiper-button-next,
+.testimonials-swiper .swiper-button-prev {
+  @apply text-blue-700;
+}
+
+.testimonials-swiper .swiper-button-next:after,
+.testimonials-swiper .swiper-button-prev:after {
+  @apply text-xl font-bold;
+}
+
+/* ========================================
+   🚀 MOBILE-PROOF SCROLL ANIMATIONS
+   ======================================== */
+
+/* Base animation classes - ALWAYS visible by default for accessibility */
+.animate-on-scroll,
+.animate-fade-in,
+.animate-slide-left,
+.animate-slide-right,
+.animate-scale-up,
+.animate-mobile-only,
+.animate-pc-only,
+.animate-desktop-only {
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  opacity: 1;
+  transform: none;
+}
+
+/* Mobile-optimized transitions - faster and smoother */
+@media (max-width: 767px) {
+  .animate-on-scroll,
+  .animate-fade-in,
+  .animate-slide-left,
+  .animate-slide-right,
+  .animate-scale-up,
+  .animate-mobile-only {
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+}
+
+/* Hidden state - ONLY applied by JavaScript when conditions are met */
+.animate-hidden.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(20px); /* Reduced distance for mobile */
+}
+
+.animate-hidden.animate-fade-in {
+  opacity: 0;
+}
+
+.animate-hidden.animate-slide-left {
+  opacity: 0;
+  transform: translateX(-30px); /* Reduced distance for mobile */
+}
+
+.animate-hidden.animate-slide-right {
+  opacity: 0;
+  transform: translateX(30px); /* Reduced distance for mobile */
+}
+
+.animate-hidden.animate-scale-up {
+  opacity: 0;
+  transform: scale(0.95); /* Less dramatic scale for mobile */
+}
+
+.animate-hidden.animate-mobile-only {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.animate-hidden.animate-pc-only {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.animate-hidden.animate-desktop-only {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+/* Visible state - applied when in view */
+.animate-visible.animate-on-scroll,
+.animate-visible.animate-mobile-only,
+.animate-visible.animate-pc-only,
+.animate-visible.animate-desktop-only {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animate-visible.animate-fade-in {
+  opacity: 1;
+}
+
+.animate-visible.animate-slide-left {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.animate-visible.animate-slide-right {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.animate-visible.animate-scale-up {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Animation delays - reduced for mobile */
+.delay-100 {
+  transition-delay: 0.05s;
+}
+.delay-200 {
+  transition-delay: 0.1s;
+}
+.delay-300 {
+  transition-delay: 0.15s;
+}
+.delay-400 {
+  transition-delay: 0.2s;
+}
+.delay-500 {
+  transition-delay: 0.25s;
+}
+
+/* Desktop delays */
+@media (min-width: 768px) {
+  .delay-100 {
+    transition-delay: 0.1s;
+  }
+  .delay-200 {
+    transition-delay: 0.2s;
+  }
+  .delay-300 {
+    transition-delay: 0.3s;
+  }
+  .delay-400 {
+    transition-delay: 0.4s;
+  }
+  .delay-500 {
+    transition-delay: 0.5s;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .animate-on-scroll,
+  .animate-fade-in,
+  .animate-slide-left,
+  .animate-slide-right,
+  .animate-scale-up,
+  .animate-mobile-only,
+  .animate-pc-only,
+  .animate-desktop-only {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Force hardware acceleration on mobile for smoother animations */
+@media (max-width: 767px) {
+  .animate-on-scroll,
+  .animate-fade-in,
+  .animate-slide-left,
+  .animate-slide-right,
+  .animate-scale-up,
+  .animate-mobile-only {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
 }

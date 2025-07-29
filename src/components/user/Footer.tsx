@@ -10,13 +10,14 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import {
   faFacebookF,
-  faTwitter,
   faInstagram,
   faLinkedinIn,
   faCcVisa,
   faCcMastercard,
   faCcPaypal,
   faCcAmex,
+  faTelegram,
+  faXTwitter,
 } from "@fortawesome/free-brands-svg-icons";
 
 const Footer = () => {
@@ -24,39 +25,42 @@ const Footer = () => {
     <footer className="bg-[#0d0d1d] text-white px-6 md:px-4 pt-16 pb-8">
       <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-10">
         {/* Brand */}
-        <div>
+        <div className="animate-on-scroll animate-mobile-only delay-100">
           <h2 className="text-2xl font-bold mb-3">EthioAddis</h2>
           <p className="text-sm text-gray-400 mb-4">
             Your trusted partner in finding your dream home. We provide
             exceptional service with a personal touch.
           </p>
           <div className="flex space-x-4 text-gray-400">
-            <Link href="/contact">
+            <Link href="https://www.facebook.com/share/1CcWSpShwx/">
               <FontAwesomeIcon
                 icon={faFacebookF}
                 className="hover:text-white"
               />
             </Link>
-            <Link href="/contact">
-              <FontAwesomeIcon icon={faTwitter} className="hover:text-white" />
+            <Link href="https://x.com/mc_shukang?t=U9lXW4mBm0z6SuMfKBgc6g&s=09">
+              <FontAwesomeIcon icon={faXTwitter} className="hover:text-white" />
             </Link>
-            <Link href="/contact">
+            <Link href="https://www.instagram.com/mc_shukang?igsh=MTVseHBsaWhiOHE5ZQ==">
               <FontAwesomeIcon
                 icon={faInstagram}
                 className="hover:text-white"
               />
             </Link>
-            <Link href="/contact">
+            <Link href="https://www.linkedin.com/in/shueb-ahmed-77b3132a5?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app">
               <FontAwesomeIcon
                 icon={faLinkedinIn}
                 className="hover:text-white"
               />
             </Link>
+            <Link href="https://t.me/ShuebAhmed">
+              <FontAwesomeIcon icon={faTelegram} className="hover:text-white" />
+            </Link>
           </div>
         </div>
 
         {/* Quick Links */}
-        <div>
+        <div className="animate-on-scroll animate-mobile-only delay-100">
           <h3 className="text-lg font-semibold mb-3">Quick Links</h3>
           <ul className="space-y-2 text-sm text-gray-400 inline-block">
             <li className="hover:text-white">
@@ -75,7 +79,7 @@ const Footer = () => {
         </div>
 
         {/* Contact Info */}
-        <div>
+        <div className="animate-on-scroll animate-mobile-only delay-100">
           <h3 className="text-lg font-semibold mb-3">Contact Info</h3>
           <ul className="space-y-3 text-sm text-gray-400">
             <li className="flex items-start gap-2">
@@ -108,7 +112,7 @@ const Footer = () => {
         </div>
 
         {/* Newsletter */}
-        <div>
+        <div className="animate-on-scroll animate-mobile-only delay-100">
           <h3 className="text-lg font-semibold mb-3">Newsletter</h3>
           <p className="text-sm text-gray-400 mb-4">
             Subscribe to our newsletter for the latest property updates.

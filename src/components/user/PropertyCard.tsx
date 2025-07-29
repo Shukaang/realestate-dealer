@@ -106,8 +106,8 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
 
   // Grid View
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden border">
-      <div className="relative w-full h-65 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden border animate-on-scroll animate-pc-only delay-200">
+      <div className="relative w-full h-65 overflow-hidden animate-on-scroll animate-mobile-only delay-100">
         {property.images && property.images.length > 0 && (
           <img
             src={property.images[0]}

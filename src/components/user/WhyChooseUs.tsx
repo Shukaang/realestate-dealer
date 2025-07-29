@@ -9,10 +9,10 @@ import {
 
 export default function WhyChooseUs() {
   return (
-    <section className="bg-gray-100 py-10">
+    <section className="bg-gray-100 py-10 animate-on-scroll animate-pc-only delay-200">
       <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         {/* Left Image */}
-        <div className="w-full">
+        <div className="w-full animate-on-scroll animate-mobile-only delay-200">
           <Image
             src="/OurDealers.jpg"
             alt="Why Choose EstateElite"
@@ -24,13 +24,13 @@ export default function WhyChooseUs() {
 
         {/* Right Content */}
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6 animate-on-scroll animate-mobile-only delay-200">
             Why Choose <span className="text-blue-700">EthioAddis</span>
           </h2>
 
           <div className="space-y-6">
             {/* Item 1 */}
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 animate-on-scroll animate-mobile-only delay-100">
               <div className="w-10 h-10 rounded-full p-3 bg-blue-100 flex items-center justify-center text-blue-700 mx-auto mb-6">
                 <i className="text-lg">
                   <FontAwesomeIcon icon={faGem} />
@@ -48,7 +48,7 @@ export default function WhyChooseUs() {
             </div>
 
             {/* Item 2 */}
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 animate-on-scroll animate-mobile-only delay-100">
               <div className="w-10 h-10 rounded-full p-3 bg-blue-100 flex items-center justify-center text-blue-700 mx-auto mb-6">
                 <i className="text-lg">
                   <FontAwesomeIcon icon={faUserTie} />
@@ -64,7 +64,7 @@ export default function WhyChooseUs() {
             </div>
 
             {/* Item 3 */}
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 animate-on-scroll animate-mobile-only delay-100">
               <div className="w-10 h-10 rounded-full p-3 bg-blue-100 flex items-center justify-center text-blue-700 mx-auto mb-6">
                 <i className="text-lg">
                   <FontAwesomeIcon icon={faFileInvoiceDollar} />
@@ -82,7 +82,7 @@ export default function WhyChooseUs() {
             </div>
 
             {/* Item 4 */}
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 animate-on-scroll animate-mobile-only delay-100">
               <div className="w-10 h-10 rounded-full p-3 bg-blue-100 flex items-center justify-center text-blue-700 mx-auto mb-6">
                 <i className="text-lg">
                   <FontAwesomeIcon icon={faHeadset} />
@@ -98,7 +98,7 @@ export default function WhyChooseUs() {
             </div>
 
             {/* CTA Button */}
-            <div className="mt-4">
+            <div className="mt-4 animate-on-scroll animate-mobile-only delay-100">
               <a
                 href="/about"
                 className="mt-5 inline-block bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded font-medium text-sm transition"
