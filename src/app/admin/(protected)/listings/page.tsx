@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
-import { mutate } from "swr";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useFirestoreCollection } from "@/lib/useFirestoreCollection";
 import { Badge } from "@/components/ui/badge";

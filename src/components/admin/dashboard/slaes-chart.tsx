@@ -21,6 +21,10 @@ import {
 } from "chart.js";
 import { Loader2 } from "lucide-react";
 
+interface SalesChartProps {
+  simplified?: boolean;
+}
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -30,7 +34,7 @@ ChartJS.register(
   Legend
 );
 
-export const SalesChart = () => {
+export const SalesChart = ({ simplified }: SalesChartProps) => {
   const [chartData, setChartData] = useState({
     labels: [] as string[],
     values: [] as number[],

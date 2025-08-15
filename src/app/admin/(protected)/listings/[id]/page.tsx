@@ -72,7 +72,6 @@ export default function ListingDetailPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "features">(
     "overview"
   );
-  const [createdByName, setCreatedByName] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchListing = async () => {

@@ -65,7 +65,7 @@ export default function ListingDetailPage() {
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [searchStrategy, setSearchStrategy] = useState<
     "exact" | "city" | "country" | "latest"
-  >("");
+  >("latest");
 
   // Fetch all listings
   const { data: allListings = [], isLoading } =

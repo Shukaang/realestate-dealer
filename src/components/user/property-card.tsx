@@ -19,7 +19,7 @@ interface PropertyCardProps {
     location: string;
     description?: string;
     images?: string[];
-    status: string;
+    status?: string;
     for: string;
     type: string;
     bedrooms: number;

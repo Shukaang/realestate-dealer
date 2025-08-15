@@ -27,6 +27,25 @@ import {
 import { SalesChart } from "@/components/admin/dashboard/slaes-chart";
 import Link from "next/link";
 
+interface Listing {
+  numericId: string;
+  title: string;
+  status: "sold" | "available" | "pending";
+  price: number | string;
+  location?: string;
+}
+
+interface Appointment {
+  id: string;
+  status: "done" | string;
+  viewed?: boolean;
+}
+
+interface UserMessage {
+  id: string;
+  viewed: boolean;
+}
+
 ChartJS.register(
   ArcElement,
   Tooltip,
@@ -43,17 +62,19 @@ const Dashboard = () => {
     data: listings = [],
     isLoading: listingsLoading,
     error: listingsError,
-  } = useFirestoreCollection<any>("listings");
+  } = useFirestoreCollection<Listing>("listings");
+
   const {
     data: appointments = [],
     isLoading: appointmentsLoading,
     error: appointmentsError,
-  } = useFirestoreCollection<any>("appointments");
+  } = useFirestoreCollection<Appointment>("appointments");
+
   const {
     data: messages = [],
     isLoading: messagesLoading,
     error: messagesError,
-  } = useFirestoreCollection<any>("userMessages");
+  } = useFirestoreCollection<UserMessage>("userMessages");
 
   // Data processing
   const soldListings = useMemo(

@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 interface AppointmentFormProps {
   listingTitle: string;
   numericId: number;
-  listingImage: string;
+  listingImage?: string;
 }
 
 export default function AppointmentForm({

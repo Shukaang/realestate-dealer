@@ -113,7 +113,7 @@ export default function CreateListing() {
           setCreator({
             uid: user.uid,
             name: `${matchedAdmin.firstName} ${matchedAdmin.lastName}`,
-            email: user.email,
+            email: user.email || "",
           });
         }
       }
@@ -251,9 +251,12 @@ export default function CreateListing() {
       setMainImage(null);
       setDetailImages([]);
       setSelectedFeatures([]);
-    } catch (err) {
-      console.error("Error creating listing:", err);
-      toast.error(`Failed to create listing: ${err.message}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(`Failed to create listing: ${err.message}`);
+      } else {
+        toast.error("Failed to create listing: Unknown error");
+      }
     } finally {
       setUploading(false);
     }
