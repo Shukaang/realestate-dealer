@@ -1,16 +1,14 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
   faArrowRight,
   faMapMarkerAlt,
-  faTimes,
-  faChevronDown,
-  faFilter,
 } from "@fortawesome/free-solid-svg-icons";
 import { useFirestoreCollection } from "@/lib/useFirestoreCollection";
 import PageLoader from "@/components/shared/page-loader";
@@ -46,8 +44,6 @@ export default function HomePage() {
   const [selectedType, setSelectedType] = useState("");
   const [selectedPrice, setSelectedPrice] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,37 +109,7 @@ export default function HomePage() {
 
   // Total count of matching listings
   const totalMatches = filteredListings.length;
-
-  // Calculate active filters
-  const activeFilters = [
-    searchQuery && `Search: "${searchQuery}"`,
-    selectedCity && `City: ${selectedCity}`,
-    selectedType && `Type: ${selectedType}`,
-    selectedPrice && `Price: ${selectedPrice}`,
-  ].filter(Boolean);
-
-  const activeFilterCount = activeFilters.length;
-
   if (isLoading) return <PageLoader />;
-
-  // Filter tag component
-  const FilterTag = ({
-    label,
-    onRemove,
-  }: {
-    label: string;
-    onRemove: () => void;
-  }) => (
-    <div className="flex items-center bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm">
-      <span>{label}</span>
-      <button
-        onClick={onRemove}
-        className="ml-2 text-blue-800 hover:text-blue-900 focus:outline-none"
-      >
-        <FontAwesomeIcon icon={faTimes} size="xs" />
-      </button>
-    </div>
-  );
 
   return (
     <div className="space-y-24 pt-10">
@@ -163,65 +129,26 @@ export default function HomePage() {
           <p className="max-w-xl mx-auto text-lg text-blue-50 mb-8">
             Discover quality properties in top cities with our expert agents.
           </p>
+          {/* Search Box */}
+          <div className="backdrop-blur-none p-6 rounded-xl shadow-xl w-full max-w-5xl mx-auto space-y-4 text-left">
+            {/* Filter Summary Bar */}
+            {(searchQuery || selectedCity || selectedType || selectedPrice) && (
+              <div className="text-sm text-white bg-blue-800/80 px-4 py-2 rounded-lg">
+                Showing {totalMatches}{" "}
+                {totalMatches !== 1 ? "properties" : "property"}
+                {searchQuery && ` matching "${searchQuery}"`}
+                {selectedType && ` of type "${selectedType}"`}
+                {selectedCity && ` in ${selectedCity}`}
+                {selectedPrice && ` priced ${selectedPrice}`}
+              </div>
+            )}
 
-          {/* Modern Search Container */}
-          <div className="backdrop-blur-sm bg-white/10 p-6 rounded-2xl shadow-2xl w-full max-w-5xl mx-auto space-y-4 text-left border border-white/20">
-            {/* Mobile Filters Button */}
-            <div className="md:hidden flex justify-center mb-4">
-              <button
-                onClick={() => setMobileFiltersOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg"
-              >
-                <FontAwesomeIcon icon={faFilter} />
-                <span>
-                  Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
-                </span>
-              </button>
-            </div>
-
-            {/* Filter Tags */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {searchQuery && (
-                <FilterTag
-                  label={`Search: "${searchQuery}"`}
-                  onRemove={() => setSearchQuery("")}
-                />
-              )}
-              {selectedCity && (
-                <FilterTag
-                  label={`City: ${selectedCity}`}
-                  onRemove={() => setSelectedCity("")}
-                />
-              )}
-              {selectedType && (
-                <FilterTag
-                  label={`Type: ${selectedType}`}
-                  onRemove={() => setSelectedType("")}
-                />
-              )}
-              {selectedPrice && (
-                <FilterTag
-                  label={`Price: ${selectedPrice}`}
-                  onRemove={() => setSelectedPrice("")}
-                />
-              )}
-            </div>
-
-            {/* Enhanced Search Grid */}
             <div
-              className={`grid ${
-                isExpanded
-                  ? "grid-cols-1 md:grid-cols-5"
-                  : "grid-cols-1 md:grid-cols-4"
-              } gap-4 relative`}
+              className="grid grid-cols-1 md:grid-cols-5 gap-4 relative"
               ref={searchRef}
             >
-              {/* Advanced Search Input */}
-              <div
-                className={`${
-                  isExpanded ? "md:col-span-2" : "md:col-span-3"
-                } relative`}
-              >
+              {/* Search Input with Count Badge */}
+              <div className="col-span-2 relative">
                 <div className="relative">
                   <input
                     type="text"
@@ -231,310 +158,137 @@ export default function HomePage() {
                       setShowSearchResults(e.target.value.length > 0);
                     }}
                     onFocus={() => setShowSearchResults(searchQuery.length > 0)}
-                    placeholder="Search by title, location, amenities..."
-                    className="w-full h-14 text-black px-5 pr-12 text-base rounded-xl border-0 bg-white shadow-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    placeholder="Search by title, location, type..."
+                    className="w-full h-10 text-black px-4 text-sm rounded-md border bg-gray-50 border-gray-300 focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
-                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery("")}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <FontAwesomeIcon icon={faTimes} />
-                      </button>
-                    )}
-                    <FontAwesomeIcon
-                      icon={faSearch}
-                      className="text-blue-600"
-                    />
-                  </div>
+                  {searchQuery && (
+                    <span className="absolute right-10 top-2 bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+                      {totalMatches} found
+                    </span>
+                  )}
+                  <FontAwesomeIcon
+                    icon={faSearch}
+                    className="absolute right-3 top-3 text-gray-400"
+                  />
                 </div>
 
-                {/* Modern Search Dropdown */}
+                {/* Enhanced Search Dropdown */}
                 {showSearchResults && (
-                  <div className="absolute z-50 mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-200 max-h-96 overflow-y-auto">
-                    {/* Dropdown Header */}
-                    <div className="sticky top-0 bg-white p-4 border-b z-10">
-                      <div className="flex justify-between items-center">
-                        <h3 className="font-semibold text-gray-900">
-                          Matching Properties
-                        </h3>
-                        <span className="text-sm text-gray-500">
-                          {totalMatches} results
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Results List */}
-                    <div className="divide-y divide-gray-100">
-                      {searchResults.length > 0 ? (
-                        searchResults.slice(0, 5).map((listing) => (
+                  <div className="absolute z-60 mt-1 w-full bg-gray-50 rounded-md shadow-lg border border-gray-200 max-h-40 overflow-y-auto">
+                    {searchResults.length > 0 ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <div className="px-3 py-2 text-xs text-gray-500 border-b">
+                            Showing {Math.min(searchResults.length)} of{" "}
+                            {totalMatches} matches
+                          </div>
+                          {totalMatches >= 3 && (
+                            <div className="p-3 text-center text-sm text-blue-600 hover:bg-blue-50 border-t">
+                              <Link
+                                href={`/listings?search=${encodeURIComponent(
+                                  searchQuery
+                                )}${
+                                  selectedCity ? `&city=${selectedCity}` : ""
+                                }${
+                                  selectedType ? `&type=${selectedType}` : ""
+                                }${
+                                  selectedPrice ? `&price=${selectedPrice}` : ""
+                                }`}
+                                onClick={() => setShowSearchResults(false)}
+                              >
+                                View all {totalMatches} properties →
+                              </Link>
+                            </div>
+                          )}
+                        </div>
+                        {searchResults.map((listing) => (
                           <Link
                             key={listing.id}
                             href={`/listings/${listing.numericId}`}
-                            className="flex p-4 hover:bg-blue-50 transition-colors"
+                            className="flex items-center p-3 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-0"
                             onClick={() => setShowSearchResults(false)}
                           >
-                            <div className="relative h-16 w-16 flex-shrink-0 rounded-xl overflow-hidden">
+                            <div className="relative h-12 w-12 flex-shrink-0 rounded overflow-hidden">
                               <Image
-                                src={
-                                  listing.images?.[0] ??
-                                  "/property-placeholder.jpg"
-                                }
+                                src={listing.images?.[0] ?? "/Big Home1.jpg"}
                                 alt={listing.title}
                                 fill
                                 className="object-cover"
                               />
                             </div>
-                            <div className="ml-4 min-w-0 flex-1">
-                              <h3 className="text-base font-medium text-gray-900 truncate">
+                            <div className="ml-3">
+                              <h3 className="text-sm font-medium text-gray-900 line-clamp-1">
                                 {listing.title}
                               </h3>
-                              <div className="flex items-center text-sm text-gray-500 mt-1">
+                              <div className="flex items-center text-xs text-gray-500 mt-1">
                                 <FontAwesomeIcon
                                   icon={faMapMarkerAlt}
-                                  className="mr-1.5 text-blue-600"
+                                  className="mr-1 text-blue-600"
                                   size="xs"
                                 />
-                                <span className="truncate">
-                                  {listing.location}
-                                </span>
-                              </div>
-                              <div className="mt-1 flex items-center">
-                                <span className="text-sm font-semibold text-blue-700">
-                                  ${listing.price.toLocaleString()}
-                                </span>
-                                <span className="mx-2 text-gray-300">•</span>
-                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                                  {listing.type}
-                                </span>
+                                <span>{listing.location}</span>
                               </div>
                             </div>
                           </Link>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-gray-500">
-                          No properties found. Try different search terms.
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Dropdown Footer */}
-                    {searchResults.length > 0 && (
-                      <div className="sticky bottom-0 bg-white p-3 border-t">
-                        <Link
-                          href={`/listings?search=${encodeURIComponent(
-                            searchQuery
-                          )}${selectedCity ? `&city=${selectedCity}` : ""}${
-                            selectedType ? `&type=${selectedType}` : ""
-                          }${selectedPrice ? `&price=${selectedPrice}` : ""}`}
-                          className="flex justify-center items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
-                          onClick={() => setShowSearchResults(false)}
-                        >
-                          View all matching properties
-                          <FontAwesomeIcon icon={faArrowRight} size="sm" />
-                        </Link>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="p-3 text-center text-sm text-gray-500">
+                        No properties match your search
                       </div>
                     )}
                   </div>
                 )}
               </div>
-
-              {/* Expand Filters Button */}
-              {!isExpanded && (
-                <button
-                  onClick={() => setIsExpanded(true)}
-                  className="hidden md:flex items-center justify-center h-14 px-4 bg-white rounded-xl shadow-md text-gray-700 hover:bg-gray-50"
-                >
-                  <span>More Filters</span>
-                  <FontAwesomeIcon icon={faChevronDown} className="ml-2" />
+              <select
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="h-10 px-3 text-sm rounded-md border bg-gray-50 border-gray-300 text-black placeholder-white focus:ring-0 focus:outline-none"
+              >
+                <option value="">City</option>
+                <option>Adama</option>
+                <option>Addis Ababa</option>
+                <option>Bahirdar</option>
+                <option>Hawassa</option>
+                <option>Jigjiga</option>
+                <option>Negele</option>
+              </select>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="h-10 px-3 text-sm rounded-md border bg-gray-50 border-gray-300 text-black placeholder-white focus:ring-0 focus:outline-none"
+              >
+                <option value="">Property Type</option>
+                <option>Apartment</option>
+                <option>House</option>
+                <option>Villa</option>
+                <option>Penthouse</option>
+                <option>Mansion</option>
+              </select>
+              <select
+                value={selectedPrice}
+                onChange={(e) => setSelectedPrice(e.target.value)}
+                className="h-10 px-3 text-sm rounded-md border bg-gray-50 border-gray-300 text-black placeholder-white focus:ring-0 focus:outline-none"
+              >
+                <option value="">Price Range</option>
+                <option>$0 - $1,000,000</option>
+                <option>$1,000,000 - $5,000,000</option>
+                <option>$5,000,000 - $10,000,000</option>
+                <option>$10,000,000 - $20,000,000</option>
+                <option>$20,000,000+</option>
+              </select>
+            </div>
+            <div className="text-center pt-2">
+              <Link href={"/listings"}>
+                <button className="inline-flex items-center justify-center gap-2 px-6 py-2 bg-blue-700 text-white text-sm font-medium rounded-md hover:bg-blue-800 transition duration-200">
+                  <FontAwesomeIcon icon={faSearch} />
+                  Search
                 </button>
-              )}
-
-              {/* Advanced Filters (shown when expanded) */}
-              {isExpanded && (
-                <>
-                  <div className="relative">
-                    <select
-                      value={selectedCity}
-                      onChange={(e) => setSelectedCity(e.target.value)}
-                      className="w-full h-14 pl-5 pr-10 text-base rounded-xl appearance-none border-0 bg-white shadow-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                    >
-                      <option value="">All Cities</option>
-                      <option>Addis Ababa</option>
-                      <option>Adama</option>
-                      <option>Bahirdar</option>
-                      <option>Hawassa</option>
-                      <option>Jigjiga</option>
-                      <option>Negele</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <FontAwesomeIcon
-                        icon={faChevronDown}
-                        className="text-gray-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="relative">
-                    <select
-                      value={selectedType}
-                      onChange={(e) => setSelectedType(e.target.value)}
-                      className="w-full h-14 pl-5 pr-10 text-base rounded-xl appearance-none border-0 bg-white shadow-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                    >
-                      <option value="">All Types</option>
-                      <option>Apartment</option>
-                      <option>House</option>
-                      <option>Villa</option>
-                      <option>Penthouse</option>
-                      <option>Mansion</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <FontAwesomeIcon
-                        icon={faChevronDown}
-                        className="text-gray-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="relative">
-                    <select
-                      value={selectedPrice}
-                      onChange={(e) => setSelectedPrice(e.target.value)}
-                      className="w-full h-14 pl-5 pr-10 text-base rounded-xl appearance-none border-0 bg-white shadow-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                    >
-                      <option value="">All Prices</option>
-                      <option>$0 - $1,000,000</option>
-                      <option>$1,000,000 - $5,000,000</option>
-                      <option>$5,000,000 - $10,000,000</option>
-                      <option>$10,000,000 - $20,000,000</option>
-                      <option>$20,000,000+</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <FontAwesomeIcon
-                        icon={faChevronDown}
-                        className="text-gray-500"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Search Button */}
-              <div className="flex flex-col md:flex-row gap-3">
-                {isExpanded && (
-                  <button
-                    onClick={() => setIsExpanded(false)}
-                    className="flex items-center justify-center h-14 px-4 bg-gray-100 rounded-xl shadow-md text-gray-700 hover:bg-gray-200"
-                  >
-                    <FontAwesomeIcon icon={faTimes} className="mr-2" />
-                    <span>Less</span>
-                  </button>
-                )}
-                <Link href={"/listings"} className="flex-1">
-                  <button className="w-full h-14 flex items-center justify-center gap-3 px-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                    <FontAwesomeIcon icon={faSearch} />
-                    <span>Search Properties</span>
-                  </button>
-                </Link>
-              </div>
+              </Link>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Mobile Filters Panel */}
-      {mobileFiltersOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end md:hidden">
-          <div className="bg-white w-full max-h-[85vh] rounded-t-3xl p-6 overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">Filters</h2>
-              <button
-                onClick={() => setMobileFiltersOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <FontAwesomeIcon icon={faTimes} size="lg" />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location
-                </label>
-                <select
-                  value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
-                  className="w-full h-12 px-4 rounded-lg border border-gray-300 focus:ring-blue-600 focus:border-blue-600"
-                >
-                  <option value="">All Cities</option>
-                  <option>Addis Ababa</option>
-                  <option>Adama</option>
-                  <option>Bahirdar</option>
-                  <option>Hawassa</option>
-                  <option>Jigjiga</option>
-                  <option>Negele</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Property Type
-                </label>
-                <select
-                  value={selectedType}
-                  onChange={(e) => setSelectedType(e.target.value)}
-                  className="w-full h-12 px-4 rounded-lg border border-gray-300 focus:ring-blue-600 focus:border-blue-600"
-                >
-                  <option value="">All Types</option>
-                  <option>Apartment</option>
-                  <option>House</option>
-                  <option>Villa</option>
-                  <option>Penthouse</option>
-                  <option>Mansion</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price Range
-                </label>
-                <select
-                  value={selectedPrice}
-                  onChange={(e) => setSelectedPrice(e.target.value)}
-                  className="w-full h-12 px-4 rounded-lg border border-gray-300 focus:ring-blue-600 focus:border-blue-600"
-                >
-                  <option value="">All Prices</option>
-                  <option>$0 - $1,000,000</option>
-                  <option>$1,000,000 - $5,000,000</option>
-                  <option>$5,000,000 - $10,000,000</option>
-                  <option>$10,000,000 - $20,000,000</option>
-                  <option>$20,000,000+</option>
-                </select>
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  onClick={() => {
-                    setSelectedCity("");
-                    setSelectedType("");
-                    setSelectedPrice("");
-                  }}
-                  className="flex-1 py-3 px-4 bg-gray-100 rounded-lg text-gray-800 font-medium"
-                >
-                  Reset
-                </button>
-                <button
-                  onClick={() => setMobileFiltersOpen(false)}
-                  className="flex-1 py-3 px-4 bg-blue-600 rounded-lg text-white font-medium"
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Latest Listings */}
       <section className="max-w-7xl mx-auto px-5">
