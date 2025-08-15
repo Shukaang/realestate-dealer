@@ -11,6 +11,7 @@ import {
   faMapMarkerAlt,
   faXmark,
   faFilter,
+  faMedal,
 } from "@fortawesome/free-solid-svg-icons";
 import { useFirestoreCollection } from "@/lib/useFirestoreCollection";
 import PageLoader from "@/components/shared/page-loader";
@@ -20,6 +21,7 @@ import MainTestimonial from "@/components/user/home/main-testimonials";
 import WhyChooseUs from "@/components/user/home/why-choose-us";
 import FeaturedCities from "@/components/user/home/featured-city";
 import CTA from "@/components/user/home/cta";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface Listing {
   id: string;
@@ -242,7 +244,7 @@ export default function HomePage() {
             )}
 
             <div
-              className="grid grid-cols-1 md:grid-cols-5 gap-4 relative"
+              className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-6 gap-4 relative"
               ref={searchRef}
             >
               {/* Search Input with Count Badge */}
@@ -376,13 +378,14 @@ export default function HomePage() {
                   <option>$10,000,000 - $20,000,000</option>
                   <option>$20,000,000+</option>
                 </select>
-                <button
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="absolute right-10 top-2 text-gray-500 hover:text-blue-600"
-                >
-                  <FontAwesomeIcon icon={faFilter} size="xs" />
-                </button>
               </div>
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="flex justify-between items-center text-gray-500 hover:text-blue-600 px-3 py-2 rounded-md border bg-gray-50 border-gray-300"
+              >
+                <FontAwesomeIcon icon={faFilter} size="xs" />
+                {showAdvancedFilters ? <ChevronUp /> : <ChevronDown />}
+              </button>
             </div>
 
             {/* Advanced Filters */}
