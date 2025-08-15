@@ -189,8 +189,6 @@ export default function ListingsPage() {
   // STEP 5: Handle page changes
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
-    // Scroll to top when page changes
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (isLoading) return <PageLoader />;
