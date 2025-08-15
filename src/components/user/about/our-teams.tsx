@@ -9,7 +9,7 @@ const teamMembers = [
   {
     name: "Shueb Ahmed",
     position: "Founder & CEO",
-    image: "/My-profilepic.jpg",
+    image: "/my-profilepic.jpg",
     bio: "With over 10 years in Ethiopian real estate, Shueb leads our vision of transforming property experiences across the country.",
   },
   {
