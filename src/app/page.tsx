@@ -9,6 +9,8 @@ import {
   faSearch,
   faArrowRight,
   faMapMarkerAlt,
+  faXmark,
+  faFilter,
 } from "@fortawesome/free-solid-svg-icons";
 import { useFirestoreCollection } from "@/lib/useFirestoreCollection";
 import PageLoader from "@/components/shared/page-loader";
@@ -43,7 +45,11 @@ export default function HomePage() {
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedPrice, setSelectedPrice] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
+  const [area, setArea] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,6 +64,17 @@ export default function HomePage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedCity("");
+    setSelectedType("");
+    setSelectedPrice("");
+    setBedrooms("");
+    setBathrooms("");
+    setArea("");
+  };
 
   // Memoized filter application
   const filteredListings = useMemo(() => {
@@ -93,13 +110,40 @@ export default function HomePage() {
           return true;
         })();
 
-        return matchesSearch && matchesCity && matchesType && matchesPrice;
+        const matchesBedrooms = bedrooms
+          ? l.bedrooms >= parseInt(bedrooms)
+          : true;
+
+        const matchesBathrooms = bathrooms
+          ? l.bathrooms >= parseInt(bathrooms)
+          : true;
+
+        const matchesArea = area ? l.area >= parseInt(area) : true;
+
+        return (
+          matchesSearch &&
+          matchesCity &&
+          matchesType &&
+          matchesPrice &&
+          matchesBedrooms &&
+          matchesBathrooms &&
+          matchesArea
+        );
       })
       .sort(
         (a, b) =>
           b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()
       );
-  }, [listings, searchQuery, selectedCity, selectedType, selectedPrice]);
+  }, [
+    listings,
+    searchQuery,
+    selectedCity,
+    selectedType,
+    selectedPrice,
+    bedrooms,
+    bathrooms,
+    area,
+  ]);
 
   // For display - first 6 listings
   const displayedListings = filteredListings.slice(0, 6);
@@ -110,6 +154,16 @@ export default function HomePage() {
   // Total count of matching listings
   const totalMatches = filteredListings.length;
   if (isLoading) return <PageLoader />;
+
+  // Check if any filters are active
+  const hasFilters =
+    searchQuery ||
+    selectedCity ||
+    selectedType ||
+    selectedPrice ||
+    bedrooms ||
+    bathrooms ||
+    area;
 
   return (
     <div className="space-y-24 pt-10">
@@ -132,14 +186,58 @@ export default function HomePage() {
           {/* Search Box */}
           <div className="backdrop-blur-none p-6 rounded-xl shadow-xl w-full max-w-5xl mx-auto space-y-4 text-left">
             {/* Filter Summary Bar */}
-            {(searchQuery || selectedCity || selectedType || selectedPrice) && (
-              <div className="text-sm text-white bg-blue-800/80 px-4 py-2 rounded-lg">
-                Showing {totalMatches}{" "}
-                {totalMatches !== 1 ? "properties" : "property"}
-                {searchQuery && ` matching "${searchQuery}"`}
-                {selectedType && ` of type "${selectedType}"`}
-                {selectedCity && ` in ${selectedCity}`}
-                {selectedPrice && ` priced ${selectedPrice}`}
+            {hasFilters && (
+              <div className="flex flex-wrap justify-between items-center gap-2 text-sm text-white bg-blue-800/80 px-4 py-2 rounded-lg">
+                <div className="flex flex-wrap items-center gap-2">
+                  {searchQuery && (
+                    <FilterChip
+                      label={`Search: "${searchQuery}"`}
+                      onRemove={() => setSearchQuery("")}
+                    />
+                  )}
+                  {selectedCity && (
+                    <FilterChip
+                      label={`City: ${selectedCity}`}
+                      onRemove={() => setSelectedCity("")}
+                    />
+                  )}
+                  {selectedType && (
+                    <FilterChip
+                      label={`Type: ${selectedType}`}
+                      onRemove={() => setSelectedType("")}
+                    />
+                  )}
+                  {selectedPrice && (
+                    <FilterChip
+                      label={`Price: ${selectedPrice}`}
+                      onRemove={() => setSelectedPrice("")}
+                    />
+                  )}
+                  {bedrooms && (
+                    <FilterChip
+                      label={`Bedrooms: ${bedrooms}+`}
+                      onRemove={() => setBedrooms("")}
+                    />
+                  )}
+                  {bathrooms && (
+                    <FilterChip
+                      label={`Bathrooms: ${bathrooms}+`}
+                      onRemove={() => setBathrooms("")}
+                    />
+                  )}
+                  {area && (
+                    <FilterChip
+                      label={`Area: ${area}+ sqft`}
+                      onRemove={() => setArea("")}
+                    />
+                  )}
+                </div>
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-0.5 hover:text-white/70 cursor-pointer text-sm"
+                >
+                  Clear all
+                </button>
               </div>
             )}
 
@@ -265,19 +363,84 @@ export default function HomePage() {
                 <option>Penthouse</option>
                 <option>Mansion</option>
               </select>
-              <select
-                value={selectedPrice}
-                onChange={(e) => setSelectedPrice(e.target.value)}
-                className="h-10 px-3 text-sm rounded-md border bg-gray-50 border-gray-300 text-black placeholder-white focus:ring-0 focus:outline-none"
-              >
-                <option value="">Price Range</option>
-                <option>$0 - $1,000,000</option>
-                <option>$1,000,000 - $5,000,000</option>
-                <option>$5,000,000 - $10,000,000</option>
-                <option>$10,000,000 - $20,000,000</option>
-                <option>$20,000,000+</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={selectedPrice}
+                  onChange={(e) => setSelectedPrice(e.target.value)}
+                  className="h-10 px-3 text-sm rounded-md border bg-gray-50 border-gray-300 text-black placeholder-white focus:ring-0 focus:outline-none w-full"
+                >
+                  <option value="">Price Range</option>
+                  <option>$0 - $1,000,000</option>
+                  <option>$1,000,000 - $5,000,000</option>
+                  <option>$5,000,000 - $10,000,000</option>
+                  <option>$10,000,000 - $20,000,000</option>
+                  <option>$20,000,000+</option>
+                </select>
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="absolute right-10 top-2 text-gray-500 hover:text-blue-600"
+                >
+                  <FontAwesomeIcon icon={faFilter} size="xs" />
+                </button>
+              </div>
             </div>
+
+            {/* Advanced Filters */}
+            {showAdvancedFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 bg-blue-50/50 p-4 rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bedrooms
+                  </label>
+                  <select
+                    value={bedrooms}
+                    onChange={(e) => setBedrooms(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-md border bg-gray-50 border-gray-300 text-black focus:ring-0 focus:outline-none"
+                  >
+                    <option value="">Any</option>
+                    <option value="1">1+</option>
+                    <option value="2">2+</option>
+                    <option value="3">3+</option>
+                    <option value="4">4+</option>
+                    <option value="5">5+</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bathrooms
+                  </label>
+                  <select
+                    value={bathrooms}
+                    onChange={(e) => setBathrooms(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-md border bg-gray-50 border-gray-300 text-black focus:ring-0 focus:outline-none"
+                  >
+                    <option value="">Any</option>
+                    <option value="1">1+</option>
+                    <option value="2">2+</option>
+                    <option value="3">3+</option>
+                    <option value="4">4+</option>
+                    <option value="5">5+</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Min Area (m2)
+                  </label>
+                  <select
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-md border bg-gray-50 border-gray-300 text-black focus:ring-0 focus:outline-none"
+                  >
+                    <option value="">Any</option>
+                    <option>100+</option>
+                    <option>100-500</option>
+                    <option>500-1000</option>
+                    <option>1000+</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
             <div className="text-center pt-2">
               <Link href={"/listings"}>
                 <button className="inline-flex items-center justify-center gap-2 px-6 py-2 bg-blue-700 text-white text-sm font-medium rounded-md hover:bg-blue-800 transition duration-200">
@@ -291,8 +454,8 @@ export default function HomePage() {
       </section>
 
       {/* Latest Listings */}
-      <section className="max-w-7xl mx-auto px-5">
-        <div className="flex justify-between mb-10 items-end">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row justify-between mb-10 items-start sm:items-end gap-4">
           <div>
             <h1 className="text-3xl font-bold">Latest Listings</h1>
             <p className="text-sm text-gray-600 mt-2">
@@ -322,3 +485,25 @@ export default function HomePage() {
     </div>
   );
 }
+
+// Filter chip component for individual filters
+const FilterChip = ({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) => (
+  <div className="flex items-center gap-1 bg-blue-700/70 px-2 py-1 rounded text-xs whitespace-nowrap">
+    <span>{label}</span>
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onRemove();
+      }}
+      className="hover:text-blue-200"
+    >
+      <FontAwesomeIcon icon={faXmark} className="text-xs" />
+    </button>
+  </div>
+);

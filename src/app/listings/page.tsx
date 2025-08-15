@@ -372,7 +372,7 @@ export default function ListingsPage() {
             >
               {currentPageListings.map((listing) => (
                 <PropertyCard
-                  key={`${listing.id}-${currentPage}`} // Unique key with page info
+                  key={`${listing.id}-${currentPage}`}
                   property={listing}
                   view={view}
                 />
