@@ -83,7 +83,7 @@ export default function AppointmentsPage() {
     data: appointments,
     error,
     isLoading,
-  } = useFirestoreCollection("appointments");
+  } = useFirestoreCollection<Appointment>("appointments");
 
   const [mergedAppointments, setMergedAppointments] = useState<Appointment[]>(
     []
