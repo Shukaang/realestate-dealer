@@ -1,4 +1,5 @@
 "use client";
+
 import { useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -242,7 +243,7 @@ export default function HomePage() {
             Discover quality properties in top cities with our expert agents.
           </p>
 
-          <div className="backdrop-blur-sm bg-white/10 p-6 rounded-2xl shadow-2xl w-full max-w-6xl mx-auto space-y-6 text-left border border-white/20">
+          <div className="backdrop-blur-none p-6 rounded-2xl shadow-2xl w-full max-w-6xl mx-auto space-y-6 text-left border border-white/20">
             {/* Active Filters Display */}
             {getActiveFiltersCount > 0 && (
               <div className="flex flex-wrap items-center gap-2 pb-4 border-b border-white/20">
@@ -343,7 +344,7 @@ export default function HomePage() {
 
                 {/* Enhanced Search Dropdown */}
                 {showSearchResults && searchInputFocused && (
-                  <div className="absolute z-50 mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-200 max-h-96 overflow-hidden">
+                  <div className="absolute z-50 mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-200 max-h-40 overflow-hidden">
                     <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
                       <span className="text-sm font-medium text-gray-700">
                         {totalMatches} properties found
