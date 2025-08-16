@@ -632,7 +632,7 @@ export default function ListingDetailPage() {
             <div className="flex items-center gap-4 mb-4">
               <div className="relative w-16 h-16 rounded-full overflow-hidden">
                 <Image
-                  src="/My-profilepic.jpg"
+                  src="/my-profilepic.jpg"
                   alt="Property agent"
                   fill
                   className="object-cover"
