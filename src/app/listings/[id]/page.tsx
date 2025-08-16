@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useFirestoreCollection } from "@/lib/useFirestoreCollection";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -651,14 +652,20 @@ export default function ListingDetailPage() {
                   icon={faPhone}
                   className="w-4 h-4 text-blue-700"
                 />
-                <span>+251 991 868 812</span>
+                <span>
+                  <Link href="tel:+251 991 868 812">+251 991 868 812</Link>
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <FontAwesomeIcon
                   icon={faEnvelope}
                   className="w-4 h-4 text-blue-700"
                 />
-                <span>shukang@ethioaddis.com</span>
+                <span>
+                  <Link href="mailto:shukang@ethioaddis.com">
+                    shukang@ethioaddis.com
+                  </Link>
+                </span>
               </div>
             </div>
             <Button
