@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db, storage } from "@/lib/firebase";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useFirestoreCollection } from "@/lib/useFirestoreCollection";
@@ -10,16 +10,13 @@ import {
   addDoc,
   runTransaction,
   doc,
-  getDoc,
   Timestamp,
-  query,
-  where,
 } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload, X } from "lucide-react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { Unauthorized } from "@/components/admin/unauthorized";
 
@@ -48,6 +45,8 @@ export default function CreateListing() {
 
   const router = useRouter();
   const { hasPermission, loading: authLoading, user, role } = useAuth();
+  const mainImageInputRef = useRef<HTMLInputElement>(null);
+  const detailImagesInputRef = useRef<HTMLInputElement>(null);
 
   // Check permission first
   if (authLoading) {
@@ -102,6 +101,7 @@ export default function CreateListing() {
   };
 
   const { data: adminsData = [] } = useFirestoreCollection("admins");
+
   // Fetch Admin Name from Firestore
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -115,26 +115,12 @@ export default function CreateListing() {
             name: `${matchedAdmin.firstName} ${matchedAdmin.lastName}`,
             email: user.email || "",
           });
-        }
-      }
-    });
-    return () => unsubscribe();
-  }, [adminsData]);
-
-  useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && adminsData.length > 0) {
-        const matchedAdmin = (adminsData as Admin[]).find(
-          (admin) => admin.email === user.email
-        );
-        if (matchedAdmin) {
           setAdminName(`${matchedAdmin.firstName} ${matchedAdmin.lastName}`);
         }
       }
     });
     return () => unsubscribe();
-  }, [adminsData]);
+  }, [adminsData, auth]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -154,6 +140,22 @@ export default function CreateListing() {
     if (!e.target.files) return;
     const files = Array.from(e.target.files).slice(0, 4); // Limit to 4
     setDetailImages(files);
+  };
+
+  const triggerMainImageInput = () => {
+    if (mainImageInputRef.current) {
+      mainImageInputRef.current.click();
+    }
+  };
+
+  const triggerDetailImagesInput = () => {
+    if (detailImagesInputRef.current) {
+      detailImagesInputRef.current.click();
+    }
+  };
+
+  const removeDetailImage = (index: number) => {
+    setDetailImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -225,7 +227,7 @@ export default function CreateListing() {
         area: Number(formData.area),
       };
 
-      const docRef = await addDoc(collection(db, "listings"), listingData);
+      await addDoc(collection(db, "listings"), listingData);
 
       toast.success("Listing created successfully!", {
         duration: 1000,
@@ -424,7 +426,7 @@ export default function CreateListing() {
           onChange={handleChange}
           className={inputStyle}
         />
-        {/* Features Section */}
+
         {/* Features Section */}
         <div className="p-6 rounded-lg shadow space-y-4">
           <h3 className="text-lg font-semibold">Property Features</h3>
@@ -448,50 +450,97 @@ export default function CreateListing() {
             ))}
           </div>
         </div>
-        {/* Main Image Upload */}
+
+        {/* Main Image Upload - Mobile Optimized */}
         <div>
           <label className="block text-sm font-semibold text-blue-700 mb-2">
             Main Image <span className="text-red-500">*</span>
           </label>
+
+          {/* Hidden file input */}
           <input
             type="file"
             accept="image/*"
+            ref={mainImageInputRef}
             onChange={handleMainImageChange}
-            className="mb-4"
+            className="hidden"
           />
+
+          {/* Custom button to trigger file input */}
+          <button
+            type="button"
+            onClick={triggerMainImageInput}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-center w-full mb-4"
+          >
+            <Upload size={18} />
+            Choose Main Image
+          </button>
+
           {mainImage && (
-            <Image
-              src={URL.createObjectURL(mainImage)}
-              alt="Main Preview"
-              className="rounded w-32 h-32 object-cover border"
-              width={128}
-              height={128}
-            />
+            <div className="mt-3 flex items-center gap-3">
+              <Image
+                src={URL.createObjectURL(mainImage)}
+                alt="Main Preview"
+                className="rounded w-20 h-20 object-cover border"
+                width={80}
+                height={80}
+              />
+              <div>
+                <p className="text-sm font-medium">{mainImage.name}</p>
+                <p className="text-xs text-gray-500">
+                  {(mainImage.size / 1024).toFixed(0)} KB
+                </p>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Detail Images Upload */}
+        {/* Detail Images Upload - Mobile Optimized */}
         <div>
           <label className="block text-sm font-semibold text-blue-700 mb-2">
             Detail Images (up to 4)
           </label>
+
+          {/* Hidden file input */}
           <input
             type="file"
             accept="image/*"
+            ref={detailImagesInputRef}
             multiple
             onChange={handleDetailImagesChange}
-            className="mb-4"
+            className="hidden"
           />
-          <div className="flex gap-3 flex-wrap">
+
+          {/* Custom button to trigger file input */}
+          <button
+            type="button"
+            onClick={triggerDetailImagesInput}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-center w-full mb-4"
+          >
+            <Upload size={18} />
+            Choose Detail Images
+          </button>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {detailImages.map((img, i) => (
-              <div key={i} className="w-20 h-20 overflow-hidden rounded border">
+              <div key={i} className="relative group">
                 <Image
                   src={URL.createObjectURL(img)}
                   alt={`Detail ${i + 1}`}
-                  width={80}
-                  height={80}
-                  className="object-cover w-full h-full"
+                  width={100}
+                  height={100}
+                  className="object-cover w-full h-24 rounded border"
                 />
+                <button
+                  type="button"
+                  onClick={() => removeDetailImage(i)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={14} />
+                </button>
+                <p className="text-xs text-gray-600 mt-1 truncate">
+                  {img.name}
+                </p>
               </div>
             ))}
           </div>
@@ -500,7 +549,7 @@ export default function CreateListing() {
         <Button
           type="submit"
           className="w-full bg-blue-700 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={uploading}
+          disabled={uploading || !mainImage}
         >
           {uploading ? "Uploading..." : "Submit Listing"}
         </Button>

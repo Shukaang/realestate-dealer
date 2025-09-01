@@ -159,6 +159,16 @@ header {
   }
 }
 
+@media (max-width: 640px) {
+    .mobile-optimized-input {
+      font-size: 16px; /* Prevents zoom on focus in iOS */
+    }
+    
+    .mobile-file-input {
+      min-height: 44px; /* Minimum touch target size for mobile */
+    }
+  }
+
 /* Testimonials Swiper Styles */
 .testimonials-swiper .swiper-pagination-bullet {
   @apply bg-blue-300 opacity-50;

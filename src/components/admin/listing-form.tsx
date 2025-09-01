@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { doc, updateDoc, Timestamp } from "firebase/firestore";
 import {
@@ -12,6 +12,7 @@ import {
 import { db, storage } from "@/lib/firebase";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 
 const featureOptions = [
   "Central Air Conditioning",
@@ -29,6 +30,7 @@ const featureOptions = [
 
 export default function ListingForm({ initialData }: { initialData: any }) {
   const router = useRouter();
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -118,6 +120,12 @@ export default function ListingForm({ initialData }: { initialData: any }) {
     setReplacedImages((prev) => ({ ...prev, [index]: file }));
   };
 
+  const triggerFileInput = (index: number) => {
+    if (fileInputRefs.current[index]) {
+      fileInputRefs.current[index]?.click();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!initialData?.docId) return toast.error("Missing document ID");
@@ -126,18 +134,23 @@ export default function ListingForm({ initialData }: { initialData: any }) {
     try {
       // Handle image updates
       const updatedImages = [...existingImages];
+      const imagesToDelete: string[] = [];
+
       for (const index in replacedImages) {
         const idx = parseInt(index);
         const file = replacedImages[idx];
         if (!file) continue;
 
+        // Add old image to deletion queue if it exists
         if (existingImages[idx]) {
-          await deleteFromStorageByUrl(existingImages[idx]);
+          imagesToDelete.push(existingImages[idx]);
         }
 
+        // Upload new image
         const newUrl = await uploadNewImage(file);
         updatedImages[idx] = newUrl;
       }
+
       // Prepare update data
       const updateData: any = {
         ...formData,
@@ -156,6 +169,12 @@ export default function ListingForm({ initialData }: { initialData: any }) {
       // Update document
       const refDoc = doc(db, "listings", initialData.docId);
       await updateDoc(refDoc, updateData);
+
+      // Delete old images after successful update
+      for (const url of imagesToDelete) {
+        await deleteFromStorageByUrl(url);
+      }
+
       toast.success("Listing updated successfully!", {
         duration: 1500,
         onAutoClose: () => {
@@ -285,30 +304,59 @@ export default function ListingForm({ initialData }: { initialData: any }) {
           {existingImages.map((url, index) => (
             <div
               key={index}
-              className="flex items-center gap-4 bg-gray-50 dark:bg-gray-800 p-3 rounded-md border"
+              className="flex flex-col sm:flex-row items-center gap-4 bg-gray-50 dark:bg-gray-800 p-3 rounded-md border"
             >
-              <img
-                src={
-                  replacedImages[index]
-                    ? URL.createObjectURL(replacedImages[index]!)
-                    : url
-                }
-                alt={`Image ${index + 1}`}
-                className="w-20 h-20 object-cover rounded border"
-              />
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Replace Image {index + 1}
-                </label>
+              <div className="relative">
+                <img
+                  src={
+                    replacedImages[index]
+                      ? URL.createObjectURL(replacedImages[index]!)
+                      : url
+                  }
+                  alt={`Image ${index + 1}`}
+                  className="w-20 h-20 object-cover rounded border"
+                />
+                {replacedImages[index] && (
+                  <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-2 w-full">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  Image {index + 1}
+                </span>
+
+                {/* Hidden file input */}
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
-                    if (e.target.files?.[0])
-                      handleReplaceImage(index, e.target.files[0]);
+                  ref={(el) => {
+                    fileInputRefs.current[index] = el;
                   }}
-                  className="text-sm"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      handleReplaceImage(index, e.target.files[0]);
+                    }
+                  }}
+                  className="hidden"
                 />
+
+                {/* Custom button to trigger file input */}
+                <button
+                  type="button"
+                  onClick={() => triggerFileInput(index)}
+                  className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors"
+                >
+                  <Upload size={16} />
+                  Replace Image
+                </button>
+
+                {replacedImages[index] && (
+                  <p className="text-xs text-green-600 truncate">
+                    {replacedImages[index]?.name}
+                  </p>
+                )}
               </div>
             </div>
           ))}
