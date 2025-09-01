@@ -32,7 +32,7 @@ const testimonials = [
     image: "/michael.jpg",
     stars: 5,
     message:
-      "I've worked with several real estate agencies, but EthioAddis stands out. Their market expertise and commitment to client satisfaction is unmatched. Highly recommended!",
+      "I've worked with several real estate agencies, but EthioAddis stands out so far compared to those agencies out there. Their market expertise and commitment to client satisfaction is unmatched. Highly recommended!",
   },
   {
     name: "Sara Getachew",
@@ -40,13 +40,13 @@ const testimonials = [
     image: "/sarah.jpg",
     stars: 4,
     message:
-      "Professional, reliable, and results-driven. EthioAddis helped me sell my property quickly and at a great price. Their marketing strategy was exceptional.",
+      "Professional, reliable, and results-driven. And EthioAddis helped me sell my property quickly and at a great price. So fter all their marketing strategy was exceptionally amaizing. Much recommended.",
   },
 ];
 
 export default function MainTestimonial() {
   return (
-    <section className="py-20 bg-white animate-on-scroll animate-pc-only animate-fade-in delay-200">
+    <section className="pt-20 pb-10 bg-white animate-on-scroll animate-pc-only animate-fade-in delay-200">
       <div className="max-w-6xl mx-auto px-5">
         <div className="text-center mb-16 animate-on-scroll animate-mobile-only animate-fade-in delay-200">
           <div className="inline-flex items-center px-3 py-1 bg-yellow-50 rounded-full text-yellow-700 text-sm font-medium mb-4">

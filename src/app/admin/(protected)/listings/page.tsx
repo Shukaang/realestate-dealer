@@ -39,6 +39,7 @@ import {
   faHouse,
   faVectorSquare,
 } from "@fortawesome/free-solid-svg-icons";
+import Image from "next/image";
 
 // Types
 interface Listing {
@@ -672,6 +673,7 @@ export default function AdminListingsPage() {
                     <img
                       src={listing.images[0] || "/placeholder.svg"}
                       alt={listing.title}
+                      loading="lazy"
                       className="w-full h-48 object-cover rounded-t-xl hover:opacity-90 transition-opacity"
                     />
                   </Link>

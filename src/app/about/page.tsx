@@ -8,7 +8,7 @@ import OurStory from "@/components/user/about/our-story";
 import Missions from "@/components/user/about/missions";
 import Achivements from "@/components/user/about/achivements";
 import OurTeams from "@/components/user/about/our-teams";
-import Testimonials from "@/components/user/about/testimonials";
+import MainTestimonial from "@/components/user/main-testimonials";
 import CTA from "@/components/user/about/abou-cta";
 
 export default function AboutPage() {
@@ -29,7 +29,7 @@ export default function AboutPage() {
       <Missions />
       <Achivements />
       <OurTeams />
-      <Testimonials />
+      <MainTestimonial />
       <CTA />
       <Footer />
     </div>

@@ -20,6 +20,7 @@ import {
   faClock,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "@/lib/context/AuthContext";
+import Image from "next/image";
 
 interface Listing {
   id: string;
@@ -427,6 +428,7 @@ function ListingCard({ listing }: { listing: Listing }) {
             <img
               src={listing.images[0]}
               alt={listing.title}
+              loading="lazy"
               className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
             />
             <div className="flex justify-between items-start mb-2">

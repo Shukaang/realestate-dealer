@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface FirestoreTimestamp {
   seconds: number;
@@ -339,6 +340,7 @@ export default function AppointmentDetailsPage() {
                     <img
                       src={appointment.listingImage || "/placeholder.svg"}
                       alt={appointment.listingTitle || "Property"}
+                      loading="lazy"
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/Big Home1";

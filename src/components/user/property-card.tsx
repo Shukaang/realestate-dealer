@@ -41,6 +41,7 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
             <img
               src={property.images[0]}
               alt={property.title}
+              loading="lazy"
               className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
             />
           )}
@@ -112,6 +113,7 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
           <img
             src={property.images[0]}
             alt={property.title}
+            loading="lazy"
             className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
           />
         )}

@@ -17,7 +17,7 @@ import { useFirestoreCollection } from "@/lib/useFirestoreCollection";
 import PageLoader from "@/components/shared/page-loader";
 import Footer from "@/components/user/footer";
 import PropertyCard from "@/components/user/property-card";
-import MainTestimonial from "@/components/user/home/main-testimonials";
+import MainTestimonial from "@/components/user/main-testimonials";
 import WhyChooseUs from "@/components/user/home/why-choose-us";
 import FeaturedCities from "@/components/user/home/featured-city";
 import CTA from "@/components/user/home/cta";
@@ -313,6 +313,7 @@ export default function HomePage() {
                                 src={listing.images?.[0] ?? "/Big Home1.jpg"}
                                 alt={listing.title}
                                 fill
+                                loading="lazy"
                                 className="object-cover"
                               />
                             </div>
