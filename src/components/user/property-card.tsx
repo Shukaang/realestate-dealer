@@ -73,7 +73,13 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
             </p>
             <p className="text-xl font-bold text-blue-700 mb-2">
               ETB {Number(property.price).toLocaleString("en-US")}
+              {property.for === "Rent" && (
+                <span className="text-sm font-semibold text-gray-500">
+                  /month
+                </span>
+              )}
             </p>
+
             <p className="text-gray-700 mb-4 line-clamp-4 sm:line-clamp-2">
               {property.description}
             </p>
@@ -97,7 +103,7 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
 
             <Link
               href={detailUrl}
-              className="inline-block text-sm text-center w-full bg-blue-700 text-white rounded py-2 px-4 hover:bg-blue-800 transition"
+              className="inline-block text-center w-full bg-blue-800 text-white rounded py-2 px-4 hover:bg-blue-800/95 transition"
             >
               View Details
             </Link>
@@ -140,9 +146,13 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
           />
           {property.location}
         </p>
-        <p className="text-xl font-bold text-blue-700 mb-4">
+        <p className="text-xl font-bold text-blue-700 mb-2">
           ETB {Number(property.price).toLocaleString("en-US")}
+          {property.for === "Rent" && (
+            <span className="text-sm font-semibold text-gray-500">/month</span>
+          )}
         </p>
+
         <div className="flex justify-between text-gray-500 border-t border-gray-200 pt-4 text-sm">
           <span>
             <FontAwesomeIcon icon={faBed} className="w-4 mr-2" />
@@ -160,7 +170,7 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
         <div className="mt-4">
           <Link
             href={detailUrl}
-            className="inline-block text-sm text-center w-full bg-blue-700 text-white rounded py-2 px-4 hover:bg-blue-800 transition"
+            className="inline-block text-center w-full bg-blue-800 text-white rounded py-2 px-4 hover:bg-blue-800/95 transition"
           >
             View Details
           </Link>
