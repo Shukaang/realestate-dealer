@@ -23,10 +23,9 @@ import {
   faBath,
   faHouse,
   faMapMarkerAlt,
-  faCheck,
-  faX,
 } from "@fortawesome/free-solid-svg-icons";
 import PageLoader from "@/components/shared/page-loader";
+import { CheckCircle, XCircle } from "lucide-react";
 
 interface Listing {
   id: string;
@@ -55,15 +54,18 @@ interface Listing {
 const featureOptions = [
   "Central Air Conditioning",
   "Gourmet Kitchen",
-  "Smart Home Technology",
+  "Elevator",
   "Fitness Center Access",
+  "Water Tank",
+  "Garden",
   "24/7 Security",
   "Laundry Room",
-  "Hardwood Flooring",
+  "Generator",
   "Private Balcony",
   "Swimming Pool",
   "Garage Parking",
-  "High Ceilings",
+  "WiFi Access",
+  "Refrigerator",
 ];
 
 export default function ListingDetailPage() {
@@ -301,15 +303,9 @@ export default function ListingDetailPage() {
                       className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg"
                     >
                       {listing.amenities?.includes(feature) ? (
-                        <FontAwesomeIcon
-                          icon={faCheck}
-                          className="text-green-500 w-4 h-4"
-                        />
+                        <CheckCircle className="text-green-600 w-4 h-4" />
                       ) : (
-                        <FontAwesomeIcon
-                          icon={faX}
-                          className="text-red-400 w-4 h-4"
-                        />
+                        <XCircle className="text-red-600 w-4 h-4" />
                       )}
                       <span className="text-gray-700">{feature}</span>
                     </div>

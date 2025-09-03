@@ -20,6 +20,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -29,14 +30,27 @@ export default function Navbar() {
     document.fonts.ready.then(() => setIsLoading(false));
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   if (isLoading) {
     return <NavbarSkeleton />;
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b shadow-sm">
+    <header
+      className={`fixed top-0 left-0 w-full bg-white z-50 transition-all ${
+        scrolled ? "border-b border-gray-300" : "border-b-0"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-18">
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="text-xl font-bold text-blue-700 mr-2">
@@ -48,14 +62,16 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex space-x-6">
+          <nav className="hidden md:flex space-x-10 h-10">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "text-sm font-medium hover:text-blue-700 transition",
-                  pathname === link.href ? "text-blue-700" : "text-gray-600"
+                  "py-2 text-lg font-medium hover:text-blue-700 hover:border-b-2 hover:border-blue-700 transition-colors",
+                  pathname === link.href
+                    ? "text-blue-700"
+                    : "text-gray-800 border-transparen"
                 )}
               >
                 {link.name}

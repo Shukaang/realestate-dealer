@@ -18,7 +18,7 @@ export default function ContactPage() {
     return <PageLoader />;
   }
   return (
-    <div className="text-gray-800 pt-10">
+    <div className="text-gray-800 pt-18">
       <ContactHero />
       <SendMessage />
       <CTA />

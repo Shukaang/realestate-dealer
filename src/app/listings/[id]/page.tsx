@@ -10,8 +10,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBed,
   faBath,
-  faCheck,
-  faX,
   faChevronRight,
   faVectorSquare,
   faCalendarAlt,
@@ -21,6 +19,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import AppointmentForm from "@/components/user/appointment-form";
 import PageLoader from "@/components/shared/page-loader";
+import { CheckCircle, XCircle } from "lucide-react";
 
 interface Listing {
   id: string;
@@ -44,15 +43,18 @@ interface Listing {
 const featureOptions = [
   "Central Air Conditioning",
   "Gourmet Kitchen",
-  "Smart Home Technology",
+  "Elevator",
   "Fitness Center Access",
+  "Water Tank",
+  "Garden",
   "24/7 Security",
   "Laundry Room",
-  "Hardwood Flooring",
+  "Generator",
   "Private Balcony",
   "Swimming Pool",
   "Garage Parking",
-  "High Ceilings",
+  "WiFi Access",
+  "Refrigerator",
 ];
 
 export default function ListingDetailPage() {
@@ -496,15 +498,9 @@ export default function ListingDetailPage() {
                   {featureOptions.map((feature) => (
                     <div key={feature} className="flex items-start gap-3">
                       {listing.amenities?.includes(feature) ? (
-                        <FontAwesomeIcon
-                          icon={faCheck}
-                          className="text-green-500 w-4 h-4 mt-0.5"
-                        />
+                        <CheckCircle className="text-green-600 w-4 h-4 mt-0.5" />
                       ) : (
-                        <FontAwesomeIcon
-                          icon={faX}
-                          className="text-red-400 w-4 h-4 mt-0.5"
-                        />
+                        <XCircle className="text-red-600 w-4 h-4 mt-0.5" />
                       )}
                       <span className="text-gray-700">{feature}</span>
                     </div>

@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHome, faList, faThLarge } from "@fortawesome/free-solid-svg-icons";
 import PageLoader from "@/components/shared/page-loader";
 import { useSearchParams, useRouter } from "next/navigation";
+import Footer from "@/components/user/footer";
 
 interface Listing {
   id: string;
@@ -194,93 +195,196 @@ export default function ListingsPage() {
   if (isLoading) return <PageLoader />;
 
   return (
-    <div className="pb-16">
-      {/* Hero Section */}
-      <section className="relative mx-5 h-[350px] flex items-center justify-center bg-black text-gray-50">
-        <Image
-          src="/the-new-hero.jpg"
-          fill
-          alt="Hero Image"
-          className="object-cover w-fit h-fit opacity-80"
-        />
-        <div className="z-10 text-center space-y-2 px-4">
-          <h1 className="text-4xl font-bold mb-4">Explore Our Properties</h1>
-          <p className="text-lg text-gray-200">
-            Find your dream home in the city you love.
-          </p>
-        </div>
-      </section>
-
-      {/* Filters Section */}
-      <section className="bg-white shadow sm:sticky sm:top-15 sm:z-40 py-4">
-        <div className="container mx-auto px-4 flex flex-wrap gap-4 justify-between items-center">
-          <input
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search by title or location..."
-            className="border px-3 py-2 rounded-md w-full md:w-1/4"
+    <section>
+      <div className="py-18">
+        {/* Hero Section */}
+        <section className="relative h-[350px] flex items-center justify-center bg-black text-gray-50">
+          <Image
+            src="/the-new-hero.jpg"
+            fill
+            alt="Hero Image"
+            className="object-cover w-fit h-fit opacity-80"
           />
-          <select
-            value={selectedCity}
-            onChange={(e) => handleCityChange(e.target.value)}
-            className="border px-3 py-2 text-sm rounded-md"
-          >
-            <option value="">All Cities</option>
-            <option value="Adama">Adama</option>
-            <option value="Addis Ababa">Addis Ababa</option>
-            <option value="Bahirdar">Bahirdar</option>
-            <option value="Hawassa">Hawassa</option>
-            <option value="Jigjiga">Jigjiga</option>
-            <option value="Negele">Negele</option>
-          </select>
-          <select
-            value={selectedType}
-            onChange={(e) => handleTypeChange(e.target.value)}
-            className="border px-3 py-2 text-sm rounded-md"
-          >
-            <option value="">All Types</option>
-            <option value="Apartment">Apartment</option>
-            <option value="House">House</option>
-            <option value="Villa">Villa</option>
-          </select>
-          <select
-            value={selectedPrice}
-            onChange={(e) => handlePriceChange(e.target.value)}
-            className="border px-3 py-2 text-sm rounded-md"
-          >
-            <option value="">All Prices</option>
-            <option value="0-1000000">Up to 1M</option>
-            <option value="1000000-5000000">1M - 5M</option>
-            <option value="5000000-10000000">5M - 10M</option>
-            <option value="10000000">10M+</option>
-          </select>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setView("grid")}
-              className={`px-2 py-1 rounded ${
-                view === "grid"
-                  ? "bg-blue-700 text-white"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              <FontAwesomeIcon icon={faThLarge} className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setView("list")}
-              className={`hidden sm:block px-2 py-1 rounded ${
-                view === "list"
-                  ? "bg-blue-700 text-white"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-            >
-              <FontAwesomeIcon icon={faList} className="w-4 h-4" />
-            </button>
+          <div className="z-10 text-center space-y-2 px-4">
+            <h1 className="text-4xl font-bold mb-4">Explore Our Properties</h1>
+            <p className="text-lg text-gray-200">
+              Find your dream home in the city you love.
+            </p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Results Section */}
-      <section className="container mx-auto px-4 py-10">
+        {/* Filters Section */}
+        <section className="bg-white shadow sm:sticky sm:top-15 sm:z-40 py-4">
+          <div className="container mx-auto px-4 flex flex-wrap gap-4 justify-between items-center">
+            <input
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Search by title or location..."
+              className="border px-3 py-2 rounded-md w-full md:w-1/4"
+            />
+            <select
+              value={selectedCity}
+              onChange={(e) => handleCityChange(e.target.value)}
+              className="border px-3 py-2 text-sm rounded-md"
+            >
+              <option value="">All Cities</option>
+              <option value="Adama">Adama</option>
+              <option value="Addis Ababa">Addis Ababa</option>
+              <option value="Bahirdar">Bahirdar</option>
+              <option value="Hawassa">Hawassa</option>
+              <option value="Jigjiga">Jigjiga</option>
+              <option value="Negele">Negele</option>
+            </select>
+            <select
+              value={selectedType}
+              onChange={(e) => handleTypeChange(e.target.value)}
+              className="border px-3 py-2 text-sm rounded-md"
+            >
+              <option value="">All Types</option>
+              <option value="Apartment">Apartment</option>
+              <option value="House">House</option>
+              <option value="Villa">Villa</option>
+            </select>
+            <select
+              value={selectedPrice}
+              onChange={(e) => handlePriceChange(e.target.value)}
+              className="border px-3 py-2 text-sm rounded-md"
+            >
+              <option value="">All Prices</option>
+              <option value="0-1000000">Up to 1M</option>
+              <option value="1000000-5000000">1M - 5M</option>
+              <option value="5000000-10000000">5M - 10M</option>
+              <option value="10000000">10M+</option>
+            </select>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setView("grid")}
+                className={`px-2 py-1 rounded ${
+                  view === "grid"
+                    ? "bg-blue-700 text-white"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                <FontAwesomeIcon icon={faThLarge} className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setView("list")}
+                className={`hidden sm:block px-2 py-1 rounded ${
+                  view === "list"
+                    ? "bg-blue-700 text-white"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                <FontAwesomeIcon icon={faList} className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Results Section */}
+        <section className="container mx-auto px-4 py-10">
+          {/* Pagination Section */}
+          {totalPages > 1 && (
+            <div className="container mx-auto px-4">
+              <div className="flex justify-center items-center space-x-2">
+                {/* Previous Button */}
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
+                    currentPage === 1
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                  }`}
+                >
+                  Previous
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (pageNumber) => (
+                      <button
+                        key={pageNumber}
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
+                          pageNumber === currentPage
+                            ? "bg-blue-700 text-white shadow-md"
+                            : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
+                    currentPage === totalPages
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-gray-600 text-lg hidden sm:block">
+                Showing {totalListings === 0 ? 0 : startIndex + 1}-
+                {Math.min(endIndex, totalListings)} of {totalListings}{" "}
+                Properties
+              </h3>
+              {totalPages > 1 && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Page {currentPage} of {totalPages} •{" "}
+                  {currentPageListings.length} listings on this page
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Listings Display */}
+          {totalListings === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-blue-700 text-6xl mb-4">
+                <FontAwesomeIcon icon={faHome} />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                No Properties Found
+              </h3>
+              <p className="text-gray-500">
+                Try adjusting your search criteria or filters.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Property Cards - ONLY CURRENT PAGE LISTINGS */}
+              <div
+                className={`${
+                  view === "grid"
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                    : "space-y-6"
+                }`}
+              >
+                {currentPageListings.map((listing) => (
+                  <PropertyCard
+                    key={`${listing.id}-${currentPage}`}
+                    property={listing}
+                    view={view}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+
         {/* Pagination Section */}
         {totalPages > 1 && (
           <div className="container mx-auto px-4">
@@ -330,115 +434,16 @@ export default function ListingsPage() {
                 Next
               </button>
             </div>
+
+            {/* Page Info */}
+            <div className="text-center mt-4 text-sm text-gray-500 animate-on-scroll delay-200">
+              Page {currentPage} of {totalPages} • {totalListings} total
+              properties
+            </div>
           </div>
         )}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-gray-600 text-lg hidden sm:block">
-              Showing {totalListings === 0 ? 0 : startIndex + 1}-
-              {Math.min(endIndex, totalListings)} of {totalListings} Properties
-            </h3>
-            {totalPages > 1 && (
-              <p className="text-sm text-gray-500 mt-1">
-                Page {currentPage} of {totalPages} •{" "}
-                {currentPageListings.length} listings on this page
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Listings Display */}
-        {totalListings === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-blue-700 text-6xl mb-4">
-              <FontAwesomeIcon icon={faHome} />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">
-              No Properties Found
-            </h3>
-            <p className="text-gray-500">
-              Try adjusting your search criteria or filters.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Property Cards - ONLY CURRENT PAGE LISTINGS */}
-            <div
-              className={`${
-                view === "grid"
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                  : "space-y-6"
-              }`}
-            >
-              {currentPageListings.map((listing) => (
-                <PropertyCard
-                  key={`${listing.id}-${currentPage}`}
-                  property={listing}
-                  view={view}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-
-      {/* Pagination Section */}
-      {totalPages > 1 && (
-        <div className="container mx-auto px-4">
-          <div className="flex justify-center items-center space-x-2">
-            {/* Previous Button */}
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
-                currentPage === 1
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
-              }`}
-            >
-              Previous
-            </button>
-
-            {/* Page Numbers */}
-            <div className="flex space-x-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    onClick={() => handlePageChange(pageNumber)}
-                    className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
-                      pageNumber === currentPage
-                        ? "bg-blue-700 text-white shadow-md"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
-                    }`}
-                  >
-                    {pageNumber}
-                  </button>
-                )
-              )}
-            </div>
-
-            {/* Next Button */}
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-1 rounded-lg font-medium text-sm transition-colors ${
-                currentPage === totalPages
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
-              }`}
-            >
-              Next
-            </button>
-          </div>
-
-          {/* Page Info */}
-          <div className="text-center mt-4 text-sm text-gray-500 animate-on-scroll delay-200">
-            Page {currentPage} of {totalPages} • {totalListings} total
-            properties
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+      <Footer />
+    </section>
   );
 }

@@ -168,7 +168,7 @@ export default function HomePage() {
     area;
 
   return (
-    <div className="space-y-24 pt-10">
+    <div className="space-y-24 pt-18">
       {/* Hero Section */}
       <section className="relative h-[85vh] flex items-center justify-center bg-black text-white overflow-hidden">
         <Image
@@ -391,7 +391,7 @@ export default function HomePage() {
 
             {/* Advanced Filters */}
             {showAdvancedFilters && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 bg-blue-50/50 p-4 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 bg-blue-600/50 p-4 rounded-lg">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Bedrooms

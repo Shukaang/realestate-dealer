@@ -35,15 +35,18 @@ import { Unauthorized } from "@/components/admin/unauthorized";
 const featureOptions = [
   "Central Air Conditioning",
   "Gourmet Kitchen",
-  "Smart Home Technology",
+  "Elevator",
   "Fitness Center Access",
+  "Water Tank",
+  "Garden",
   "24/7 Security",
   "Laundry Room",
-  "Hardwood Flooring",
+  "Generator",
   "Private Balcony",
   "Swimming Pool",
   "Garage Parking",
-  "High Ceilings",
+  "WiFi Access",
+  "Refrigerator",
 ];
 
 // Supported image types and maximum file size (5MB)

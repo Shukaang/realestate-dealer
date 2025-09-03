@@ -23,7 +23,7 @@ export default function AboutPage() {
   }
 
   return (
-    <div className="pt-10">
+    <div className="pt-18">
       <HeroSection />
       <OurStory />
       <Missions />

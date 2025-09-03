@@ -38,12 +38,14 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
         {/* Image (left side) */}
         <div className="relative md:w-1/3 w-full h-full md:h-64 overflow-hidden">
           {property.images && property.images.length > 0 && (
-            <img
-              src={property.images[0]}
-              alt={property.title}
-              loading="lazy"
-              className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
-            />
+            <Link href={`/listings/${property.numericId}`}>
+              <img
+                src={property.images[0]}
+                alt={property.title}
+                loading="lazy"
+                className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
+              />
+            </Link>
           )}
           {/* Status Badge */}
           <span className="absolute top-4 left-4 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
@@ -110,12 +112,14 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
     <div className="bg-white rounded-lg shadow-md overflow-hidden border animate-on-scroll animate-pc-only delay-200">
       <div className="relative w-full h-65 overflow-hidden animate-on-scroll animate-mobile-only delay-100">
         {property.images && property.images.length > 0 && (
-          <img
-            src={property.images[0]}
-            alt={property.title}
-            loading="lazy"
-            className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
-          />
+          <Link href={`/listings/${property.numericId}`}>
+            <img
+              src={property.images[0]}
+              alt={property.title}
+              loading="lazy"
+              className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
+            />
+          </Link>
         )}
         <span className="absolute top-4 left-4 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
           For {property.for || "Sale"}
