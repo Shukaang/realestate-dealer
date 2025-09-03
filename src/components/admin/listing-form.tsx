@@ -1,11 +1,10 @@
+// /components/admin/listing-form.tsx
 "use client";
-
-import type React from "react";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { X, AlertCircle } from "lucide-react";
+import { X, AlertCircle, Upload } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { db, storage } from "@/lib/firebase";
@@ -32,46 +31,39 @@ const featureOptions = [
   "High Ceilings",
 ];
 
+// Supported image types and maximum file size (5MB)
+const SUPPORTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 // File validation utility
 const validateFile = (file: File): { isValid: boolean; error?: string } => {
   // Check file type
-  if (!file.type.startsWith("image/")) {
-    return { isValid: false, error: "Please select a valid image file" };
+  if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+    return {
+      isValid: false,
+      error: `Unsupported file type. Supported types: ${SUPPORTED_IMAGE_TYPES.join(
+        ", "
+      )}`,
+    };
   }
 
-  // Check file size (max 10MB)
-  const maxSize = 10 * 1024 * 1024; // 10MB
-  if (file.size > maxSize) {
-    return { isValid: false, error: "Image size should be less than 10MB" };
-  }
-
-  // Check if file is readable
-  if (file.size === 0) {
-    return { isValid: false, error: "File appears to be empty or corrupted" };
+  // Check file size
+  if (file.size > MAX_FILE_SIZE) {
+    return {
+      isValid: false,
+      error: `File too large: ${(file.size / 1024 / 1024).toFixed(
+        2
+      )}MB. Maximum size is 5MB.`,
+    };
   }
 
   return { isValid: true };
-};
-
-// Create a safe preview URL with validation
-const createSafePreviewUrl = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        resolve(e.target.result as string);
-      } else {
-        reject(new Error("Failed to read file"));
-      }
-    };
-
-    reader.onerror = () => {
-      reject(new Error("Error reading file"));
-    };
-
-    reader.readAsDataURL(file);
-  });
 };
 
 interface ImagePreviewProps {
@@ -80,6 +72,7 @@ interface ImagePreviewProps {
   alt: string;
   className?: string;
   onRemove?: () => void;
+  progress?: number;
 }
 
 function ImagePreview({
@@ -88,6 +81,7 @@ function ImagePreview({
   alt,
   className = "",
   onRemove,
+  progress,
 }: ImagePreviewProps) {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -102,19 +96,18 @@ function ImagePreview({
         return;
       }
 
-      createSafePreviewUrl(file)
-        .then(setPreviewUrl)
-        .catch((err) => {
-          console.error("Preview error:", err);
-          setError("Unable to preview image");
-        })
-        .finally(() => setLoading(false));
-
-      return () => {
-        if (previewUrl.startsWith("blob:")) {
-          URL.revokeObjectURL(previewUrl);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setPreviewUrl(e.target.result as string);
+          setLoading(false);
         }
       };
+      reader.onerror = () => {
+        setError("Unable to preview image");
+        setLoading(false);
+      };
+      reader.readAsDataURL(file);
     } else if (url) {
       setPreviewUrl(url);
       setLoading(false);
@@ -163,6 +156,11 @@ function ImagePreview({
         className="w-full h-full object-cover"
         onError={() => setError("Failed to load image")}
       />
+      {progress !== undefined && progress < 100 && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+          <div className="text-white text-xs font-medium">{progress}%</div>
+        </div>
+      )}
       {onRemove && (
         <button
           type="button"
@@ -205,10 +203,16 @@ export default function ListingForm({ initialData }: { initialData: any }) {
   // Utility function to delete images from storage
   const deleteFromStorageByUrl = async (url: string) => {
     try {
-      const decodedUrl = decodeURIComponent(url.split("?")[0]);
-      const path = decodedUrl.split("/o/")[1];
-      const imageRef = ref(storage, path);
-      await deleteObject(imageRef);
+      // Extract the path from the URL
+      const urlObj = new URL(url);
+      const path = decodeURIComponent(
+        urlObj.pathname.split("/o/")[1]?.split("?")[0] || ""
+      );
+
+      if (path) {
+        const imageRef = ref(storage, path);
+        await deleteObject(imageRef);
+      }
     } catch (err) {
       console.warn("Failed to delete old image:", err);
     }
@@ -225,63 +229,39 @@ export default function ListingForm({ initialData }: { initialData: any }) {
 
     return new Promise((resolve, reject) => {
       try {
-        console.log(
-          "[v0] Starting upload for:",
-          file.name,
-          "Progress key:",
-          progressKey
-        );
         setUploadProgress((prev) => ({ ...prev, [progressKey]: 0 }));
 
-        const path = `listings/${Date.now()}_${Math.random()
-          .toString(36)
-          .substring(2)}_${file.name}`;
-        const imageRef = ref(storage, path);
+        const fileName = `${Date.now()}_${file.name.replace(
+          /[^a-zA-Z0-9.]/g,
+          "_"
+        )}`;
+        const imageRef = ref(storage, `listings/${fileName}`);
 
-        console.log("[v0] Upload path:", path);
         const uploadTask = uploadBytesResumable(imageRef, file);
 
         uploadTask.on(
           "state_changed",
           (snapshot) => {
-            // Calculate upload progress
             const progress =
               (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log("[v0] Upload progress:", Math.round(progress), "%");
             setUploadProgress((prev) => ({
               ...prev,
               [progressKey]: Math.round(progress),
             }));
           },
           (error) => {
-            console.error("[v0] Upload error:", error);
             setUploadProgress((prev) => {
               const newProgress = { ...prev };
               delete newProgress[progressKey];
               return newProgress;
             });
-
-            if (error.code === "storage/retry-limit-exceeded") {
-              reject(
-                new Error(
-                  "Upload failed. Please check your internet connection and try again."
-                )
-              );
-            } else if (error.code === "storage/canceled") {
-              reject(new Error("Upload was canceled"));
-            } else {
-              reject(new Error(`Upload failed: ${error.message}`));
-            }
+            reject(error);
           },
           async () => {
             try {
-              console.log("[v0] Upload completed, getting download URL");
               const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              console.log("[v0] Download URL obtained:", downloadURL);
-
               setUploadProgress((prev) => ({ ...prev, [progressKey]: 100 }));
 
-              // Clean up progress after a short delay
               setTimeout(() => {
                 setUploadProgress((prev) => {
                   const newProgress = { ...prev };
@@ -292,13 +272,11 @@ export default function ListingForm({ initialData }: { initialData: any }) {
 
               resolve(downloadURL);
             } catch (error) {
-              console.error("[v0] Error getting download URL:", error);
               reject(error);
             }
           }
         );
       } catch (error) {
-        console.error("[v0] Error starting upload:", error);
         setUploadProgress((prev) => {
           const newProgress = { ...prev };
           delete newProgress[progressKey];
@@ -370,7 +348,6 @@ export default function ListingForm({ initialData }: { initialData: any }) {
       return newReplacements;
     });
 
-    // Reset the file input
     const fileInput = document.getElementById(
       `image-${index}`
     ) as HTMLInputElement;
@@ -385,17 +362,27 @@ export default function ListingForm({ initialData }: { initialData: any }) {
 
     const replacementCount = Object.keys(replacedImages).length;
     if (replacementCount === 0) {
-      toast.error("No changes to save");
-      return;
+      // Check if other fields were modified
+      const hasFormChanges = Object.keys(formData).some(
+        (key) => formData[key as keyof typeof formData] !== initialData[key]
+      );
+      const hasFeatureChanges =
+        JSON.stringify(selectedFeatures) !==
+        JSON.stringify(initialData.amenities || []);
+
+      if (!hasFormChanges && !hasFeatureChanges) {
+        toast.error("No changes to save");
+        return;
+      }
     }
 
     setIsUpdating(true);
 
     try {
-      // Handle image updates with progress tracking
       const updatedImages = [...existingImages];
       const uploadPromises = [];
 
+      // Handle image replacements
       for (const index in replacedImages) {
         const idx = Number.parseInt(index);
         const file = replacedImages[idx];
@@ -413,7 +400,6 @@ export default function ListingForm({ initialData }: { initialData: any }) {
               // Upload new image
               const newUrl = await uploadNewImage(file, progressKey);
               updatedImages[idx] = newUrl;
-
               toast.success(`Image ${idx + 1} uploaded successfully`);
             } catch (error) {
               console.error(`Failed to upload image ${idx + 1}:`, error);
@@ -453,7 +439,6 @@ export default function ListingForm({ initialData }: { initialData: any }) {
       toast.success("Listing updated successfully!", {
         duration: 1500,
         onAutoClose: () => {
-          window.scrollTo(0, 0);
           router.push("/admin/listings");
         },
       });
@@ -588,6 +573,9 @@ export default function ListingForm({ initialData }: { initialData: any }) {
           <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
             Images
           </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Supported formats: JPEG, JPG, PNG, WEBP, GIF (Max 5MB each)
+          </p>
           <div className="grid gap-6">
             {existingImages.map((url, index) => {
               const isReplaced = replacedImages[index];
@@ -611,16 +599,8 @@ export default function ListingForm({ initialData }: { initialData: any }) {
                           ? () => handleRemoveReplacement(index)
                           : undefined
                       }
+                      progress={progress}
                     />
-
-                    {/* Upload Progress Overlay */}
-                    {progress !== undefined && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                        <div className="text-white text-xs font-medium">
-                          {progress}%
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Upload Controls */}
@@ -639,18 +619,9 @@ export default function ListingForm({ initialData }: { initialData: any }) {
                     <input
                       id={`image-${index}`}
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg, image/jpg, image/png, image/webp, image/gif"
                       onChange={(e) => {
-                        console.log(
-                          "[v0] File input triggered on mobile",
-                          e.target.files
-                        );
                         if (e.target.files?.[0]) {
-                          console.log(
-                            "[v0] File selected:",
-                            e.target.files[0].name,
-                            e.target.files[0].size
-                          );
                           handleReplaceImage(index, e.target.files[0]);
                         }
                       }}
@@ -675,11 +646,7 @@ export default function ListingForm({ initialData }: { initialData: any }) {
         </CardContent>
       </Card>
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={isUpdating || Object.keys(replacedImages).length === 0}
-      >
+      <Button type="submit" className="w-full" disabled={isUpdating}>
         {isUpdating ? (
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

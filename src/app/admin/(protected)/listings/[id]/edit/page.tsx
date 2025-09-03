@@ -1,4 +1,4 @@
-//admin/(protected)/listings/[id]/edit/page.tsx
+// /admin/(protected)/listings/[id]/edit/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -73,10 +73,7 @@ export default function EditListingPage() {
         );
         const snap = await getDocs(q);
 
-        console.log("📊 Query result - Documents found:", snap.size);
-
         if (snap.empty) {
-          console.error("❌ No listing found with numericId:", numericId);
           setError("Listing not found");
           setLoading(false);
           return;
@@ -97,7 +94,6 @@ export default function EditListingPage() {
         setListingData(data);
         setLoading(false);
       } catch (error) {
-        console.error("❌ Failed to fetch listing:", error);
         setError("Failed to fetch listing");
         setLoading(false);
       }

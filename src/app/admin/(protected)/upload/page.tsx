@@ -25,10 +25,9 @@ import {
   ArrowLeft,
   Upload,
   X,
-  AlertCircle,
-  CheckCircle,
   Loader2,
-  ImageIcon,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { Unauthorized } from "@/components/admin/unauthorized";
@@ -62,6 +61,8 @@ interface UploadProgress {
   progress: number;
   status: "pending" | "uploading" | "completed" | "error";
   error?: string;
+  isMain?: boolean;
+  index?: number;
 }
 
 export default function CreateListing() {
@@ -122,16 +123,8 @@ export default function CreateListing() {
     email: "",
   });
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
   const auth = getAuth();
-
-  const addDebugInfo = (message: string) => {
-    setDebugInfo((prev) => [
-      ...prev,
-      `${new Date().toLocaleTimeString()}: ${message}`,
-    ]);
-  };
 
   const toggleFeature = (feature: string) => {
     setSelectedFeatures((prev) =>
@@ -197,9 +190,7 @@ export default function CreateListing() {
     if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
       return {
         valid: false,
-        error: `Unsupported file type: ${
-          file.type
-        }. Supported types: ${SUPPORTED_IMAGE_TYPES.join(", ")}`,
+        error: `Unsupported file type: ${file.type}. Supported types: JPEG, JPG, PNG, WEBP, GIF`,
       };
     }
 
@@ -234,7 +225,6 @@ export default function CreateListing() {
     const validation = validateImageFile(file);
     if (!validation.valid) {
       toast.error(validation.error);
-      addDebugInfo(`Main image rejected: ${validation.error}`);
       if (mainInputRef.current) mainInputRef.current.value = "";
       return;
     }
@@ -244,12 +234,6 @@ export default function CreateListing() {
     // Create and set preview URL
     const previewUrl = URL.createObjectURL(file);
     setMainImagePreview(previewUrl);
-
-    addDebugInfo(
-      `Main image selected: ${file.name} (${(file.size / 1024).toFixed(
-        0
-      )} KB, ${file.type})`
-    );
   };
 
   const handleDetailImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,16 +247,8 @@ export default function CreateListing() {
       const validation = validateImageFile(file);
       if (validation.valid) {
         validFiles.push(file);
-        addDebugInfo(
-          `Detail image selected: ${file.name} (${(file.size / 1024).toFixed(
-            0
-          )} KB, ${file.type})`
-        );
       } else {
         toast.error(`Invalid image: ${file.name} - ${validation.error}`);
-        addDebugInfo(
-          `Detail image rejected: ${file.name} - ${validation.error}`
-        );
       }
     });
 
@@ -289,9 +265,6 @@ export default function CreateListing() {
     // Revoke the object URL to prevent memory leaks
     URL.revokeObjectURL(detailImagePreviews[index]);
 
-    const removedFile = detailImages[index];
-    addDebugInfo(`Removed detail image: ${removedFile.name}`);
-
     setDetailImages((prev) => prev.filter((_, i) => i !== index));
     setDetailImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
@@ -299,10 +272,6 @@ export default function CreateListing() {
   const removeMainImage = () => {
     if (mainImagePreview) {
       URL.revokeObjectURL(mainImagePreview);
-    }
-
-    if (mainImage) {
-      addDebugInfo(`Removed main image: ${mainImage.name}`);
     }
 
     setMainImage(null);
@@ -326,7 +295,8 @@ export default function CreateListing() {
 
   const uploadFile = async (
     file: File,
-    isMain: boolean = false
+    isMain: boolean = false,
+    index?: number
   ): Promise<string> => {
     const fileName = `${Date.now()}_${
       isMain ? "main" : "detail"
@@ -334,17 +304,15 @@ export default function CreateListing() {
     const fileRef = ref(storage, `listings/${fileName}`);
 
     // Add to progress tracking
-    setUploadProgress((prev) => [
-      ...prev,
-      {
-        fileName: file.name,
-        progress: 0,
-        status: "uploading",
-      },
-    ]);
+    const progressItem: UploadProgress = {
+      fileName: file.name,
+      progress: 0,
+      status: "uploading",
+      isMain,
+      index,
+    };
 
-    addDebugInfo(`Starting upload for: ${file.name}`);
-    addDebugInfo(`Storage path: listings/${fileName}`);
+    setUploadProgress((prev) => [...prev, progressItem]);
 
     return new Promise((resolve, reject) => {
       const uploadTask = uploadBytesResumable(fileRef, file);
@@ -357,30 +325,25 @@ export default function CreateListing() {
             (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           setUploadProgress((prev) =>
             prev.map((item) =>
-              item.fileName === file.name
+              item.fileName === file.name &&
+              item.isMain === isMain &&
+              item.index === index
                 ? { ...item, progress, status: "uploading" }
                 : item
             )
           );
-
-          if (progress % 25 === 0) {
-            // Log every 25% to avoid spam
-            addDebugInfo(`Uploading ${file.name}: ${progress.toFixed(0)}%`);
-          }
         },
         (error) => {
           // Handle unsuccessful uploads
-          const errorMsg = error.message || "Unknown upload error";
           setUploadProgress((prev) =>
             prev.map((item) =>
-              item.fileName === file.name
-                ? { ...item, status: "error", error: errorMsg }
+              item.fileName === file.name &&
+              item.isMain === isMain &&
+              item.index === index
+                ? { ...item, status: "error", error: error.message }
                 : item
             )
           );
-
-          addDebugInfo(`Upload failed for ${file.name}: ${errorMsg}`);
-          addDebugInfo(`Error code: ${error.code}`);
           reject(error);
         },
         async () => {
@@ -389,14 +352,13 @@ export default function CreateListing() {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             setUploadProgress((prev) =>
               prev.map((item) =>
-                item.fileName === file.name
+                item.fileName === file.name &&
+                item.isMain === isMain &&
+                item.index === index
                   ? { ...item, progress: 100, status: "completed" }
                   : item
               )
             );
-
-            addDebugInfo(`Upload completed for ${file.name}`);
-            addDebugInfo(`File available at: ${downloadURL}`);
 
             resolve(downloadURL);
           } catch (error) {
@@ -404,14 +366,12 @@ export default function CreateListing() {
               error instanceof Error ? error.message : "Unknown error";
             setUploadProgress((prev) =>
               prev.map((item) =>
-                item.fileName === file.name
+                item.fileName === file.name &&
+                item.isMain === isMain &&
+                item.index === index
                   ? { ...item, status: "error", error: errorMessage }
                   : item
               )
-            );
-
-            addDebugInfo(
-              `Failed to get download URL for ${file.name}: ${errorMessage}`
             );
             reject(error);
           }
@@ -423,36 +383,21 @@ export default function CreateListing() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Clear previous debug info
-    setDebugInfo([]);
-    setUploadProgress([]);
-
-    addDebugInfo("Starting form submission...");
-    addDebugInfo(`Supported image types: ${SUPPORTED_IMAGE_TYPES.join(", ")}`);
-    addDebugInfo(
-      `Max file size: ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(0)}MB`
-    );
-
     if (!mainImage) {
-      const errorMsg = "Main image is required!";
-      addDebugInfo(`ERROR: ${errorMsg}`);
-      toast.error(errorMsg);
+      toast.error("Main image is required!");
       return;
     }
 
     if (!creator.uid) {
-      const errorMsg = "Creator information missing";
-      addDebugInfo(`ERROR: ${errorMsg}`);
-      toast.error(errorMsg);
+      toast.error("Creator information missing");
       return;
     }
 
     setUploading(true);
-    addDebugInfo("Upload process started");
+    setUploadProgress([]); // Clear previous progress
 
     try {
       // 1. Generate numeric ID
-      addDebugInfo("Generating numeric ID...");
       let numericId;
       try {
         numericId = await runTransaction(db, async (transaction) => {
@@ -463,70 +408,41 @@ export default function CreateListing() {
           transaction.update(counterRef, { maxNumericId: next });
           return next;
         });
-        addDebugInfo(`Generated numeric ID: ${numericId}`);
       } catch (err) {
-        const errorMsg = "Failed to generate listing ID";
-        addDebugInfo(
-          `ERROR: ${errorMsg} - ${
-            err instanceof Error ? err.message : "Unknown error"
-          }`
-        );
-        throw new Error(errorMsg);
+        throw new Error("Failed to generate listing ID");
       }
 
       // 2. Upload images - DETAIL IMAGES FIRST
       const imageUrls: string[] = [];
 
-      // Upload detail images first (to test if main image is the issue)
+      // Upload detail images first
       if (detailImages.length > 0) {
-        addDebugInfo(`Uploading ${detailImages.length} detail images first...`);
         for (let i = 0; i < detailImages.length; i++) {
           const file = detailImages[i];
           try {
-            addDebugInfo(
-              `Starting upload for detail image ${i + 1}: ${file.name}`
-            );
-            const url = await uploadFile(file);
+            const url = await uploadFile(file, false, i);
             imageUrls.push(url);
-            addDebugInfo(`Detail image ${i + 1} uploaded successfully`);
           } catch (error) {
-            const errorMsg = `Failed to upload detail image ${i + 1}`;
-            const errorDetails =
-              error instanceof Error ? error.message : "Unknown error";
-            addDebugInfo(`ERROR: ${errorMsg} - ${errorDetails}`);
             toast.error(`Failed to upload ${file.name}`);
             // Continue with other images even if one fails
           }
         }
-      } else {
-        addDebugInfo("No detail images to upload");
       }
 
       // Upload main image AFTER detail images
       if (mainImage) {
-        addDebugInfo("Uploading main image after detail images...");
-        addDebugInfo(
-          `Main image info: ${mainImage.name}, ${mainImage.type}, ${mainImage.size} bytes`
-        );
         try {
           const mainUrl = await uploadFile(mainImage, true);
           imageUrls.unshift(mainUrl); // Add to beginning of array
-          addDebugInfo("Main image uploaded successfully");
         } catch (error) {
           const errorMsg = "Failed to upload main image";
-          const errorDetails =
-            error instanceof Error ? error.message : "Unknown error";
-          addDebugInfo(`ERROR: ${errorMsg} - ${errorDetails}`);
-          toast.error(`Failed to upload main image: ${errorDetails}`);
+          toast.error(errorMsg);
           throw new Error(errorMsg);
         }
       }
 
-      addDebugInfo(`All images uploaded. Total URLs: ${imageUrls.length}`);
-
       // 3. Create listing document only if we have at least the main image
       if (imageUrls.length > 0) {
-        addDebugInfo("Creating listing document in Firestore...");
         const listingData = {
           ...formData,
           createdBy: creator,
@@ -542,7 +458,6 @@ export default function CreateListing() {
         };
 
         await addDoc(collection(db, "listings"), listingData);
-        addDebugInfo("Listing document created successfully");
 
         toast.success("Listing created successfully!", {
           duration: 1000,
@@ -579,20 +494,15 @@ export default function CreateListing() {
         setDetailImages([]);
         setDetailImagePreviews([]);
         setSelectedFeatures([]);
+        setUploadProgress([]);
 
         // Reset file inputs
         if (mainInputRef.current) mainInputRef.current.value = "";
         if (detailInputRef.current) detailInputRef.current.value = "";
-
-        addDebugInfo("Form reset completed");
       } else {
         throw new Error("No images were successfully uploaded");
       }
     } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : "Unknown error occurred";
-      addDebugInfo(`SUBMISSION FAILED: ${errorMsg}`);
-
       if (err instanceof Error) {
         toast.error(`Failed to create listing: ${err.message}`);
       } else {
@@ -600,13 +510,13 @@ export default function CreateListing() {
       }
     } finally {
       setUploading(false);
-      addDebugInfo("Upload process completed");
     }
   };
 
+  // Progress Indicator Component
   const ProgressIndicator = ({ progress }: { progress: UploadProgress }) => {
     return (
-      <div className="flex items-center justify-between p-2 border rounded mb-2">
+      <div className="flex items-center justify-between p-2 border rounded mb-2 bg-white">
         <div className="flex items-center">
           {progress.status === "completed" && (
             <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
@@ -618,6 +528,11 @@ export default function CreateListing() {
             <AlertCircle className="w-4 h-4 text-red-500 mr-2" />
           )}
           <span className="text-sm truncate max-w-[120px]">
+            {progress.isMain
+              ? "Main: "
+              : `Detail ${
+                  progress.index !== undefined ? progress.index + 1 : ""
+                }: `}
             {progress.fileName}
           </span>
         </div>
@@ -656,55 +571,6 @@ export default function CreateListing() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Listings
           </Button>
-        </div>
-
-        {/* Debug Panel - Always visible on mobile */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h3 className="font-bold text-yellow-800 flex items-center">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            Debug Information
-          </h3>
-          <div className="mt-2 h-40 overflow-y-auto text-xs text-yellow-700 bg-yellow-100 p-2 rounded">
-            {debugInfo.length === 0 ? (
-              <p>
-                No debug information yet. Submit the form to see upload
-                progress.
-              </p>
-            ) : (
-              debugInfo.map((info, index) => (
-                <div key={index} className="mb-1">
-                  {info}
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Upload Progress */}
-          {uploadProgress.length > 0 && (
-            <div className="mt-4">
-              <h4 className="font-medium text-yellow-800 mb-2">
-                Upload Progress:
-              </h4>
-              {uploadProgress.map((progress, index) => (
-                <ProgressIndicator key={index} progress={progress} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Supported Formats Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-bold text-blue-800 flex items-center">
-            <ImageIcon className="w-4 h-4 mr-2" />
-            Supported Image Formats
-          </h3>
-          <p className="text-sm text-blue-700 mt-1">
-            JPEG, JPG, PNG, WEBP, GIF (Max 5MB each)
-          </p>
-          <p className="text-xs text-blue-600 mt-1">
-            Some image formats or metadata might cause upload issues. If an
-            image fails, try converting it to JPEG or PNG.
-          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -883,7 +749,7 @@ export default function CreateListing() {
           <input
             ref={mainInputRef}
             type="file"
-            accept="image/jpeg, image/jpg, image/png, image/webp, image/gif"
+            accept="image/*"
             onChange={handleMainImageChange}
             className="hidden"
           />
@@ -979,6 +845,18 @@ export default function CreateListing() {
             ))}
           </div>
         </div>
+
+        {/* Upload Progress Section */}
+        {uploadProgress.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-bold text-blue-800 mb-2">Upload Progress</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {uploadProgress.map((progress, index) => (
+                <ProgressIndicator key={index} progress={progress} />
+              ))}
+            </div>
+          </div>
+        )}
 
         <Button
           type="submit"
