@@ -799,7 +799,7 @@ export default function CreateListing() {
           <input
             ref={detailInputRef}
             type="file"
-            accept="image/jpeg, image/jpg, image/png, image/webp, image/gif"
+            accept="image/*"
             multiple
             onChange={handleDetailImagesChange}
             className="hidden"
