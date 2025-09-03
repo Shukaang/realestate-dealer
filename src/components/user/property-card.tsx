@@ -38,7 +38,7 @@ const PropertyCard: FC<PropertyCardProps> = ({ property, view = "list" }) => {
         {/* Image (left side) */}
         <div className="relative md:w-1/3 w-full h-full md:h-64 overflow-hidden">
           {property.images && property.images.length > 0 && (
-            <Link href={`/listings/${property.numericId}`}>
+            <Link href={detailUrl}>
               <img
                 src={property.images[0]}
                 alt={property.title}
