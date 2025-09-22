@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useFirestoreCollection } from "@/lib/useFirestoreCollection";
 import PropertyCard from "@/components/user/property-card";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHome, faList, faThLarge } from "@fortawesome/free-solid-svg-icons";
+import {
+  faHome,
+  faList,
+  faThLarge,
+  faFilter,
+  faXmark,
+} from "@fortawesome/free-solid-svg-icons";
 import PageLoader from "@/components/shared/page-loader";
 import { useSearchParams, useRouter } from "next/navigation";
-import Footer from "@/components/user/footer";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface Listing {
   id: string;
@@ -49,6 +55,12 @@ export default function ListingsPage() {
     searchParams.get("price") || ""
   );
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [bedrooms, setBedrooms] = useState(searchParams.get("bedrooms") || "");
+  const [bathrooms, setBathrooms] = useState(
+    searchParams.get("bathrooms") || ""
+  );
+  const [area, setArea] = useState(searchParams.get("area") || "");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Function to update URL with current filter state
   const updateURL = (filters: {
@@ -56,6 +68,9 @@ export default function ListingsPage() {
     city?: string;
     type?: string;
     price?: string;
+    bedrooms?: string;
+    bathrooms?: string;
+    area?: string;
   }) => {
     const params = new URLSearchParams();
 
@@ -64,6 +79,9 @@ export default function ListingsPage() {
     if (filters.city) params.set("city", filters.city);
     if (filters.type) params.set("type", filters.type);
     if (filters.price) params.set("price", filters.price);
+    if (filters.bedrooms) params.set("bedrooms", filters.bedrooms);
+    if (filters.bathrooms) params.set("bathrooms", filters.bathrooms);
+    if (filters.area) params.set("area", filters.area);
 
     // Update URL without page reload
     const newUrl = params.toString()
@@ -72,7 +90,7 @@ export default function ListingsPage() {
     router.push(newUrl, { scroll: false });
   };
 
-  // Handle search input change
+  // Handle filter changes
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     updateURL({
@@ -80,10 +98,12 @@ export default function ListingsPage() {
       city: selectedCity,
       type: selectedType,
       price: selectedPrice,
+      bedrooms,
+      bathrooms,
+      area,
     });
   };
 
-  // Handle city filter change
   const handleCityChange = (value: string) => {
     setSelectedCity(value);
     updateURL({
@@ -91,10 +111,12 @@ export default function ListingsPage() {
       city: value,
       type: selectedType,
       price: selectedPrice,
+      bedrooms,
+      bathrooms,
+      area,
     });
   };
 
-  // Handle type filter change
   const handleTypeChange = (value: string) => {
     setSelectedType(value);
     updateURL({
@@ -102,10 +124,12 @@ export default function ListingsPage() {
       city: selectedCity,
       type: value,
       price: selectedPrice,
+      bedrooms,
+      bathrooms,
+      area,
     });
   };
 
-  // Handle price filter change
   const handlePriceChange = (value: string) => {
     setSelectedPrice(value);
     updateURL({
@@ -113,7 +137,61 @@ export default function ListingsPage() {
       city: selectedCity,
       type: selectedType,
       price: value,
+      bedrooms,
+      bathrooms,
+      area,
     });
+  };
+
+  const handleBedroomsChange = (value: string) => {
+    setBedrooms(value);
+    updateURL({
+      search: searchQuery,
+      city: selectedCity,
+      type: selectedType,
+      price: selectedPrice,
+      bedrooms: value,
+      bathrooms,
+      area,
+    });
+  };
+
+  const handleBathroomsChange = (value: string) => {
+    setBathrooms(value);
+    updateURL({
+      search: searchQuery,
+      city: selectedCity,
+      type: selectedType,
+      price: selectedPrice,
+      bedrooms,
+      bathrooms: value,
+      area,
+    });
+  };
+
+  const handleAreaChange = (value: string) => {
+    setArea(value);
+    updateURL({
+      search: searchQuery,
+      city: selectedCity,
+      type: selectedType,
+      price: selectedPrice,
+      bedrooms,
+      bathrooms,
+      area: value,
+    });
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedCity("");
+    setSelectedType("");
+    setSelectedPrice("");
+    setBedrooms("");
+    setBathrooms("");
+    setArea("");
+    updateURL({});
   };
 
   // Initialize filters from URL on component mount
@@ -122,75 +200,124 @@ export default function ListingsPage() {
     const urlCity = searchParams.get("city") || "";
     const urlType = searchParams.get("type") || "";
     const urlPrice = searchParams.get("price") || "";
+    const urlBedrooms = searchParams.get("bedrooms") || "";
+    const urlBathrooms = searchParams.get("bathrooms") || "";
+    const urlArea = searchParams.get("area") || "";
 
     setSearchQuery(urlSearch);
     setSelectedCity(urlCity);
     setSelectedType(urlType);
     setSelectedPrice(urlPrice);
+    setBedrooms(urlBedrooms);
+    setBathrooms(urlBathrooms);
+    setArea(urlArea);
   }, [searchParams]);
 
-  // STEP 1: Filter the listings (exclude sold/pending)
-  const filteredListings = listings
-    .filter((listing) => {
-      // Filter out sold and pending listings
-      return listing.status !== "sold" && listing.status !== "pending";
-    })
-    .filter((listing) => {
-      // Search filter
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        listing.title?.toLowerCase().includes(query) ||
-        listing.location?.toLowerCase().includes(query)
-      );
-    })
-    .filter((listing) => {
-      // City filter
-      if (!selectedCity) return true;
-      return listing.location
-        ?.toLowerCase()
-        .includes(selectedCity.toLowerCase());
-    })
-    .filter((listing) => {
-      // Type filter
-      if (!selectedType) return true;
-      return listing.type?.toLowerCase() === selectedType.toLowerCase();
-    })
-    .filter((listing) => {
-      // Price filter
-      if (!selectedPrice) return true;
-      const price = Number(listing.price);
-      const [min, max] = selectedPrice
-        .split("-")
-        .map((p) => Number(p.replace(/[^\d]/g, "")));
-      return max ? price >= min && price <= max : price >= min;
-    })
-    .sort((a, b) => {
-      // Sort by numericId in ascending order (1, 2, 3, 4, 5...)
-      const numericIdA = Number(a.numericId) || 0;
-      const numericIdB = Number(b.numericId) || 0;
-      return numericIdB - numericIdA;
-    });
+  // Memoized filter application (similar to HomePage)
+  const filteredListings = useMemo(() => {
+    return listings
+      .filter((l) => l.status === "available")
+      .filter((l) => {
+        const query = searchQuery.toLowerCase();
+        const location = l.location?.toLowerCase() ?? "";
+        const title = l.title?.toLowerCase() ?? "";
+        const matchesSearch = searchQuery
+          ? title.includes(query) || location.includes(query)
+          : true;
 
-  // STEP 2: Pagination calculations
+        const matchesCity = selectedCity
+          ? location.includes(selectedCity.toLowerCase())
+          : true;
+
+        const matchesType = selectedType
+          ? l.type?.toLowerCase() === selectedType.toLowerCase()
+          : true;
+
+        const matchesPrice = (() => {
+          const price = l.price;
+          if (!selectedPrice) return true;
+          if (selectedPrice === "0-1000000") return price < 1_000_000;
+          if (selectedPrice === "1000000-5000000")
+            return price >= 1_000_000 && price < 5_000_000;
+          if (selectedPrice === "5000000-10000000")
+            return price >= 5_000_000 && price < 10_000_000;
+          if (selectedPrice === "10000000") return price >= 10_000_000;
+          return true;
+        })();
+
+        const matchesBedrooms = bedrooms
+          ? l.bedrooms >= parseInt(bedrooms)
+          : true;
+
+        const matchesBathrooms = bathrooms
+          ? l.bathrooms >= parseInt(bathrooms)
+          : true;
+
+        const matchesArea = area ? l.area >= parseInt(area) : true;
+
+        return (
+          matchesSearch &&
+          matchesCity &&
+          matchesType &&
+          matchesPrice &&
+          matchesBedrooms &&
+          matchesBathrooms &&
+          matchesArea
+        );
+      })
+      .sort((a, b) => {
+        const numericIdA = Number(a.numericId) || 0;
+        const numericIdB = Number(b.numericId) || 0;
+        return numericIdB - numericIdA;
+      });
+  }, [
+    listings,
+    searchQuery,
+    selectedCity,
+    selectedType,
+    selectedPrice,
+    bedrooms,
+    bathrooms,
+    area,
+  ]);
+
+  // Pagination calculations
   const LISTINGS_PER_PAGE = 9;
   const totalListings = filteredListings.length;
   const totalPages = Math.ceil(totalListings / LISTINGS_PER_PAGE);
 
-  // STEP 3: Get current page listings (THIS IS THE KEY PART)
+  // Get current page listings
   const startIndex = (currentPage - 1) * LISTINGS_PER_PAGE;
   const endIndex = startIndex + LISTINGS_PER_PAGE;
   const currentPageListings = filteredListings.slice(startIndex, endIndex);
 
-  // STEP 4: Reset to page 1 when filters change
+  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCity, selectedType, selectedPrice]);
+  }, [
+    searchQuery,
+    selectedCity,
+    selectedType,
+    selectedPrice,
+    bedrooms,
+    bathrooms,
+    area,
+  ]);
 
-  // STEP 5: Handle page changes
+  // Handle page changes
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
   };
+
+  // Check if any filters are active
+  const hasFilters =
+    searchQuery ||
+    selectedCity ||
+    selectedType ||
+    selectedPrice ||
+    bedrooms ||
+    bathrooms ||
+    area;
 
   if (isLoading) return <PageLoader />;
 
@@ -215,69 +342,201 @@ export default function ListingsPage() {
 
         {/* Filters Section */}
         <section className="bg-white shadow sm:sticky sm:top-15 sm:z-40 py-4">
-          <div className="container mx-auto px-4 flex flex-wrap gap-4 justify-between items-center">
-            <input
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Search by title or location..."
-              className="border px-3 py-2 rounded-md w-full md:w-1/4"
-            />
-            <select
-              value={selectedCity}
-              onChange={(e) => handleCityChange(e.target.value)}
-              className="border px-3 py-2 text-sm rounded-md"
-            >
-              <option value="">All Cities</option>
-              <option value="Adama">Adama</option>
-              <option value="Addis Ababa">Addis Ababa</option>
-              <option value="Bahirdar">Bahirdar</option>
-              <option value="Hawassa">Hawassa</option>
-              <option value="Jigjiga">Jigjiga</option>
-              <option value="Negele">Negele</option>
-            </select>
-            <select
-              value={selectedType}
-              onChange={(e) => handleTypeChange(e.target.value)}
-              className="border px-3 py-2 text-sm rounded-md"
-            >
-              <option value="">All Types</option>
-              <option value="Apartment">Apartment</option>
-              <option value="House">House</option>
-              <option value="Villa">Villa</option>
-            </select>
-            <select
-              value={selectedPrice}
-              onChange={(e) => handlePriceChange(e.target.value)}
-              className="border px-3 py-2 text-sm rounded-md"
-            >
-              <option value="">All Prices</option>
-              <option value="0-1000000">Up to 1M</option>
-              <option value="1000000-5000000">1M - 5M</option>
-              <option value="5000000-10000000">5M - 10M</option>
-              <option value="10000000">10M+</option>
-            </select>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setView("grid")}
-                className={`px-2 py-1 rounded ${
-                  view === "grid"
-                    ? "bg-blue-700 text-white"
-                    : "bg-gray-100 text-gray-700"
-                }`}
+          <div className="container mx-auto px-4">
+            {/* Filter Summary Bar */}
+            {hasFilters && (
+              <div className="flex flex-wrap justify-between items-center gap-2 text-sm text-white bg-blue-800/80 px-4 py-2 rounded-lg mb-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {searchQuery && (
+                    <FilterChip
+                      label={`Search: "${searchQuery}"`}
+                      onRemove={() => handleSearchChange("")}
+                    />
+                  )}
+                  {selectedCity && (
+                    <FilterChip
+                      label={`City: ${selectedCity}`}
+                      onRemove={() => handleCityChange("")}
+                    />
+                  )}
+                  {selectedType && (
+                    <FilterChip
+                      label={`Type: ${selectedType}`}
+                      onRemove={() => handleTypeChange("")}
+                    />
+                  )}
+                  {selectedPrice && (
+                    <FilterChip
+                      label={`Price: ${
+                        selectedPrice === "0-1000000"
+                          ? "Up to 1M"
+                          : selectedPrice === "1000000-5000000"
+                          ? "1M - 5M"
+                          : selectedPrice === "5000000-10000000"
+                          ? "5M - 10M"
+                          : "10M+"
+                      }`}
+                      onRemove={() => handlePriceChange("")}
+                    />
+                  )}
+                  {bedrooms && (
+                    <FilterChip
+                      label={`Bedrooms: ${bedrooms}+`}
+                      onRemove={() => handleBedroomsChange("")}
+                    />
+                  )}
+                  {bathrooms && (
+                    <FilterChip
+                      label={`Bathrooms: ${bathrooms}+`}
+                      onRemove={() => handleBathroomsChange("")}
+                    />
+                  )}
+                  {area && (
+                    <FilterChip
+                      label={`Area: ${area}+ m²`}
+                      onRemove={() => handleAreaChange("")}
+                    />
+                  )}
+                </div>
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-0.5 hover:text-white/70 cursor-pointer text-sm"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-4 justify-between items-center">
+              <input
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder="Search by title or location..."
+                className="border px-3 py-2 rounded-md w-full md:w-1/4"
+              />
+              <select
+                value={selectedCity}
+                onChange={(e) => handleCityChange(e.target.value)}
+                className="border px-3 py-2 text-sm rounded-md"
               >
-                <FontAwesomeIcon icon={faThLarge} className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setView("list")}
-                className={`hidden sm:block px-2 py-1 rounded ${
-                  view === "list"
-                    ? "bg-blue-700 text-white"
-                    : "bg-gray-100 text-gray-700"
-                }`}
+                <option value="">All Cities</option>
+                <option value="Adama">Adama</option>
+                <option value="Addis Ababa">Addis Ababa</option>
+                <option value="Bahirdar">Bahirdar</option>
+                <option value="Hawassa">Hawassa</option>
+                <option value="Jigjiga">Jigjiga</option>
+                <option value="Negele">Negele</option>
+              </select>
+              <select
+                value={selectedType}
+                onChange={(e) => handleTypeChange(e.target.value)}
+                className="border px-3 py-2 text-sm rounded-md"
               >
-                <FontAwesomeIcon icon={faList} className="w-4 h-4" />
+                <option value="">All Types</option>
+                <option value="Apartment">Apartment</option>
+                <option value="House">House</option>
+                <option value="Villa">Villa</option>
+              </select>
+              <select
+                value={selectedPrice}
+                onChange={(e) => handlePriceChange(e.target.value)}
+                className="border px-3 py-2 text-sm rounded-md"
+              >
+                <option value="">All Prices</option>
+                <option value="0-1000000">Up to 1M</option>
+                <option value="1000000-5000000">1M - 5M</option>
+                <option value="5000000-10000000">5M - 10M</option>
+                <option value="10000000">10M+</option>
+              </select>
+
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="flex justify-between items-center text-gray-500 hover:text-blue-600 px-3 py-2 rounded-md border bg-gray-50 border-gray-300"
+              >
+                <FontAwesomeIcon icon={faFilter} size="xs" />
+                {showAdvancedFilters ? <ChevronUp /> : <ChevronDown />}
               </button>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setView("grid")}
+                  className={`px-2 py-1 rounded ${
+                    view === "grid"
+                      ? "bg-blue-700 text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  <FontAwesomeIcon icon={faThLarge} className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setView("list")}
+                  className={`hidden sm:block px-2 py-1 rounded ${
+                    view === "list"
+                      ? "bg-blue-700 text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  <FontAwesomeIcon icon={faList} className="w-4 h-4" />
+                </button>
+              </div>
             </div>
+
+            {/* Advanced Filters */}
+            {showAdvancedFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 p-4 rounded-lg mt-4 bg-gray-50">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bedrooms
+                  </label>
+                  <select
+                    value={bedrooms}
+                    onChange={(e) => handleBedroomsChange(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-md border bg-white border-gray-300 text-black focus:ring-0 focus:outline-none"
+                  >
+                    <option value="">Any</option>
+                    <option value="1">1+</option>
+                    <option value="2">2+</option>
+                    <option value="3">3+</option>
+                    <option value="4">4+</option>
+                    <option value="5">5+</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bathrooms
+                  </label>
+                  <select
+                    value={bathrooms}
+                    onChange={(e) => handleBathroomsChange(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-md border bg-white border-gray-300 text-black focus:ring-0 focus:outline-none"
+                  >
+                    <option value="">Any</option>
+                    <option value="1">1+</option>
+                    <option value="2">2+</option>
+                    <option value="3">3+</option>
+                    <option value="4">4+</option>
+                    <option value="5">5+</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Min Area (m²)
+                  </label>
+                  <select
+                    value={area}
+                    onChange={(e) => handleAreaChange(e.target.value)}
+                    className="w-full h-10 px-3 text-sm rounded-md border bg-white border-gray-300 text-black focus:ring-0 focus:outline-none"
+                  >
+                    <option value="">Any</option>
+                    <option value="100">100+</option>
+                    <option value="200">200+</option>
+                    <option value="300">300+</option>
+                    <option value="500">500+</option>
+                    <option value="1000">1000+</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -285,7 +544,7 @@ export default function ListingsPage() {
         <section className="container mx-auto px-4 py-10">
           {/* Pagination Section */}
           {totalPages > 1 && (
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto px-4 mb-6">
               <div className="flex justify-center items-center space-x-2">
                 {/* Previous Button */}
                 <button
@@ -334,6 +593,7 @@ export default function ListingsPage() {
               </div>
             </div>
           )}
+
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-gray-600 text-lg hidden sm:block">
@@ -385,9 +645,9 @@ export default function ListingsPage() {
           )}
         </section>
 
-        {/* Pagination Section */}
+        {/* Bottom Pagination Section */}
         {totalPages > 1 && (
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 pb-10">
             <div className="flex justify-center items-center space-x-2">
               {/* Previous Button */}
               <button
@@ -436,14 +696,35 @@ export default function ListingsPage() {
             </div>
 
             {/* Page Info */}
-            <div className="text-center mt-4 text-sm text-gray-500 animate-on-scroll delay-200">
+            <div className="text-center mt-4 text-sm text-gray-500">
               Page {currentPage} of {totalPages} • {totalListings} total
               properties
             </div>
           </div>
         )}
       </div>
-      <Footer />
     </section>
   );
 }
+
+// Filter chip component for individual filters
+const FilterChip = ({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) => (
+  <div className="flex items-center gap-1 bg-blue-700/70 px-2 py-1 rounded text-xs whitespace-nowrap">
+    <span>{label}</span>
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onRemove();
+      }}
+      className="hover:text-blue-200"
+    >
+      <FontAwesomeIcon icon={faXmark} className="text-xs" />
+    </button>
+  </div>
+);
