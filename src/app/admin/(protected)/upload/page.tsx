@@ -107,7 +107,7 @@ export default function CreateListing() {
     price: 0,
     location: "",
     type: "",
-    status: "available",
+    status: "pending",
     for: "Sale",
     area: 0,
     bedrooms: 0,
@@ -477,7 +477,7 @@ export default function CreateListing() {
           price: 0,
           location: "",
           type: "",
-          status: "available",
+          status: "pending",
           for: "Sale",
           area: 0,
           bedrooms: 0,
@@ -676,12 +676,6 @@ export default function CreateListing() {
             onChange={handleChange}
             className={inputStyle}
           >
-            <option className="bg-white dark:bg-slate-900" value="available">
-              Available
-            </option>
-            <option className="bg-white dark:bg-slate-900" value="sold">
-              Sold
-            </option>
             <option className="bg-white dark:bg-slate-900" value="pending">
               Pending
             </option>

@@ -150,8 +150,11 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-800 p-4 md:p-8">
       {/* Header */}
       <header className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <FontAwesomeIcon icon={faUser} className="text-blue-600" />
+        <h1 className="text-3xl font-bold flex items-center gap-3 mb-4">
+          <FontAwesomeIcon
+            icon={faUser}
+            className="py-3 px-2 bg-blue-200 dark:bg-blue-300 rounded-full text-blue-600"
+          />
           Welcome back, {adminName}
           <FontAwesomeIcon icon={faHandPeace} className="text-amber-400" />
         </h1>

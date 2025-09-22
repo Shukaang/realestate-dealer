@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useFirestoreCollection } from "@/lib/useFirestoreCollection";
-import { Doughnut, Bar, Line } from "react-chartjs-2";
+import { Doughnut, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
